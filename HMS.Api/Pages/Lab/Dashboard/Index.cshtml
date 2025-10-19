@@ -1,0 +1,170 @@
+﻿@page "/lab/dashboard"
+@model HMS.Api.Pages.Lab.Dashboard.IndexModel
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab Dashboard";
+}
+
+<div class="container py-3">
+    <h3 class="mb-3">Lab Dashboard</h3>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-muted small">Total Requests</div>
+                    <div class="fs-4" id="cardRequests">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-muted small">Total Orders</div>
+                    <div class="fs-4" id="cardOrders">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-muted small">Pending Samples</div>
+                    <div class="fs-4" id="cardPending">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="text-muted small">Total Results / Final</div>
+                    <div class="fs-6"><span id="cardResults">—</span> / <span id="cardFinal">—</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="mt-4">Latest Orders</h5>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>Patient</th>
+                    <th>Tests</th>
+                    <th>Order No</th>
+                    <th>Status</th>
+                    <th style="width:180px">At</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTbody">
+                <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h5 class="mt-4">Recent Results</h5>
+    <div class="row g-2 mb-2">
+        <div class="col-auto"><input id="resFilter" class="form-control form-control-sm" placeholder="Filter (patient / accession / code / status)…"></div>
+        <div class="col-auto"><button id="resReload" class="btn btn-sm btn-outline-secondary">Reload</button></div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm" id="resultsTbl">
+            <thead class="table-light">
+                <tr>
+                    <th>Patient</th>
+                    <th>Accession</th>
+                    <th>Code</th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                    <th>Flag</th>
+                    <th>Status</th>
+                    <th style="width:180px">At</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTbody">
+                <tr><td colspan="8" class="text-muted">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const $ = (s,r=document)=>r.querySelector(s);
+        function badge(s){ const m={Final:'success',Partial:'info',Requested:'warning'}; return `<span class="badge text-bg-${m[s]??'secondary'}">${s}</span>`; }
+
+        // --- Cards (optional; wire these if you already have a stats endpoint)
+                async function loadCards(){
+          try{
+            const r=await fetch('/api/v1/lab/dashboard/cards');
+            if(!r.ok) throw 0;
+            const x=await r.json();
+            cardRequests.textContent=x.totalRequests;
+            cardOrders.textContent=x.totalOrders;
+            cardPending.textContent=x.pendingSamples;
+            cardResults.textContent=x.totalResults;
+            cardFinal.textContent=x.finalResults;
+          }catch{}
+        }
+        loadCards();
+
+        // --- Latest Orders (patient-first)
+        async function loadOrders(){
+          const tb = $('#ordersTbody');
+          tb.innerHTML = `<tr><td colspan="5" class="text-muted">Loading…</td></tr>`;
+          const res = await fetch('/api/v1/lab/dashboard/orders');
+          if(!res.ok){ tb.innerHTML = `<tr><td colspan="5" class="text-danger">Failed to load.</td></tr>`; return; }
+          const rows = await res.json();
+          tb.innerHTML = rows.map(x=>{
+            const tests = (x.tests||[]).join(',');
+            const at = new Date(x.atUtc).toLocaleString();
+            return `<tr>
+              <td>${x.patient ?? ''}</td>
+              <td>${tests}</td>
+              <td><a href="/lab/dashboard/order?id=${encodeURIComponent(x.orderNo.split('-').pop()??'')}" class="link-primary">${x.orderNo}</a></td>
+              <td>${badge(x.status)}</td>
+              <td>${at}</td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="5" class="text-muted">No data.</td></tr>`;
+        }
+
+        // --- Recent Results (patient-first)
+        let _resultsCache=[];
+        function applyResultsFilter(){
+          const q = ($('#resFilter').value||'').toLowerCase().trim();
+          const tb = $('#resultsTbody');
+          const rows = _resultsCache.filter(r => {
+            const t = `${r.patient??''} ${r.accessionNo??''} ${r.code??''} ${r.status??''}`.toLowerCase();
+            return !q || t.includes(q);
+          });
+          tb.innerHTML = rows.map(x=>{
+            const at = new Date(x.updatedAtUtc ?? x.createdAtUtc).toLocaleString();
+            return `<tr>
+              <td>${x.patient ?? ''}</td>
+              <td>${x.accessionNo ?? ''}</td>
+              <td>${x.code ?? ''}</td>
+              <td>${x.value ?? ''}</td>
+              <td>${x.unit ?? ''}</td>
+              <td>${x.flag ?? ''}</td>
+              <td>${badge(x.status)}</td>
+              <td>${at}</td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="8" class="text-muted">No data.</td></tr>`;
+        }
+
+        async function loadResults(){
+          const tb = $('#resultsTbody');
+          tb.innerHTML = `<tr><td colspan="8" class="text-muted">Loading…</td></tr>`;
+          const res = await fetch('/api/v1/lab/dashboard/results');
+          if(!res.ok){ tb.innerHTML = `<tr><td colspan="8" class="text-danger">Failed to load.</td></tr>`; return; }
+          _resultsCache = await res.json();
+          applyResultsFilter();
+        }
+
+        $('#resReload').addEventListener('click', loadResults);
+        $('#resFilter').addEventListener('input', applyResultsFilter);
+
+        loadCards();
+        loadOrders();
+        loadResults();
+    </script>
+}

@@ -1,0 +1,44 @@
+﻿@page "/lab/dashboard/samples"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab • Samples";
+}
+<div class="container py-3">
+    <h3 class="mb-3">Pending Samples</h3>
+
+    <div class="table-responsive">
+        <table class="table table-sm" id="tbl">
+            <thead class="table-light">
+                <tr>
+                    <th>SampleId</th>
+                    <th>RequestId</th>
+                    <th>Accession</th>
+                    <th>Status</th>
+                    <th style="width:180px">At</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const $=(s,r=document)=>r.querySelector(s);
+        function badge(s){const m={Collected:'warning', Labeled:'info', Received:'success'};return `<span class="badge text-bg-${m[s]??'secondary'}">${s}</span>`}
+
+        async function load(){
+          const res = await fetch('/api/v1/lab/dashboard/samples/pending');
+          const rows = await res.json();
+          $('#tbl tbody').innerHTML = rows.map(s=>`
+            <tr>
+              <td>${s.labSampleId}</td>
+              <td><a href="/lab/dashboard/order?id=${s.labRequestId}">${s.labRequestId}</a></td>
+              <td>${s.accessionNumber}</td>
+              <td>${badge(s.status)}</td>
+              <td>${new Date(s.createdAtUtc).toLocaleString()}</td>
+            </tr>`).join('') || `<tr><td colspan="5">No pending samples.</td></tr>`;
+        }
+        load();
+    </script>
+}

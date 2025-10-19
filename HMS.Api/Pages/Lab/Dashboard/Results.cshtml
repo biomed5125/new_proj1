@@ -1,0 +1,138 @@
+﻿@page "/lab/dashboard/results"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab • Results";
+}
+
+<style>
+  .chip { padding:.25rem .55rem; border:1px solid #dee2e6; border-radius:20px; cursor:pointer; user-select:none; font-size:.85rem; }
+  .chip + .chip{ margin-left:.35rem }
+  .chip.active { background:#0d6efd; color:#fff; border-color:#0d6efd; }
+  .td-sub { font-size:.825rem; color:#6c757d }
+  .badge-subtle { background:#f1f3f5; color:#495057; font-weight:500 }
+  .copy-btn { border:0; background:transparent; padding:0 .25rem; cursor:pointer }
+  .table td, .table th { vertical-align: middle; }
+</style>
+
+<div class="container py-3">
+  <div class="d-flex align-items-center justify-content-between">
+    <h3 class="mb-0">Recent Results</h3>
+    <div class="d-flex align-items-center gap-2">
+      <input id="txtRFilter" class="form-control form-control-sm" style="width:260px" placeholder="Filter (accession/patient/code)…">
+      <button id="btnRReload" class="btn btn-sm btn-primary">Reload</button>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-4 mt-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted small">Status:</span>
+      <div id="chips-r-status"></div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted small">Source:</span>
+      <div id="chips-r-source"></div>
+    </div>
+  </div>
+
+  <div class="table-responsive mt-3">
+    <table class="table table-sm" id="tblResults">
+      <thead class="table-light">
+        <tr>
+          <th style="width:230px">Accession</th>
+          <th>Patient</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Value</th>
+          <th>Unit</th>
+          <th>Flag</th>
+          <th style="width:110px">Status</th>
+          <th style="width:190px">At</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  // API returns rows like:
+  // { accessionNo, patient, doctor, source, code, name, value, unit, flag, status, createdAtUtc, updatedAtUtc }
+  const RESULTS_API = '/api/v1/lab/dashboard/results';
+  const $ = (s, r=document)=>r.querySelector(s);
+
+  function badgeResStatus(s){
+    const m={Final:'success',Partial:'info',Requested:'warning'};
+    return `<span class="badge text-bg-${m[s]||'secondary'}">${s}</span>`;
+  }
+  function copyToClipboard(txt){
+    if(!txt) return;
+    (navigator.clipboard?.writeText(txt) || Promise.reject()).catch(()=>{ /* ignore */ });
+  }
+  function buildChips(containerId, values){
+    const host = document.getElementById(containerId);
+    host.innerHTML = values.map(v=>`<span class="chip" data-val="${v||''}">${v||'—'}</span>`).join('');
+    host.addEventListener('click', e=>{
+      const c = e.target.closest('.chip'); if(!c) return;
+      c.classList.toggle('active');
+      renderResults(window.__results||[]);
+    });
+  }
+
+  function renderResults(rows){
+    const f = ($('#txtRFilter').value||'').toLowerCase().trim();
+    const actStat = new Set([...document.querySelectorAll('#chips-r-status .chip.active')].map(x=>x.dataset.val));
+    const actSrc  = new Set([...document.querySelectorAll('#chips-r-source .chip.active')].map(x=>x.dataset.val));
+
+    const pass = r=>{
+      if (actStat.size && !actStat.has(r.status)) return false;
+      const src = r.source || '';
+      if (actSrc.size && !actSrc.has(src)) return false;
+      const hay = [r.accessionNo, r.patient, r.doctor, src, r.code, r.name, (r.value??'')]
+                  .join(' ').toLowerCase();
+      return !f || hay.includes(f);
+    };
+
+    const tb = $('#tblResults tbody');
+    tb.innerHTML = rows.filter(pass).map(x=>{
+      const at = new Date(x.updatedAtUtc ?? x.createdAtUtc).toLocaleString();
+      const sub = [x.doctor, x.source].filter(Boolean)
+                  .map(v=>`<span class="badge badge-subtle me-1">${v}</span>`).join('');
+      const safeAcc = (x.accessionNo||'').replace(/"/g,'&quot;');
+      return `<tr>
+        <td>
+          <a class="link-primary" href="/lab/reports/${encodeURIComponent(x.accessionNo)}">${x.accessionNo}</a>
+          <button class="copy-btn" title="Copy" onclick="copyToClipboard('${safeAcc}')">📋</button>
+        </td>
+        <td>${x.patient ?? ''}<div class="td-sub">${sub}</div></td>
+        <td>${x.code}</td>
+        <td>${x.name}</td>
+        <td>${x.value ?? ''}</td>
+        <td>${x.unit ?? ''}</td>
+        <td>${x.flag ?? ''}</td>
+        <td>${badgeResStatus(x.status)}</td>
+        <td>${at}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="9" class="text-muted">No data.</td></tr>`;
+  }
+
+  async function loadResults(){
+    $('#tblResults tbody').innerHTML = `<tr><td colspan="9">Loading…</td></tr>`;
+    const res = await fetch(RESULTS_API);
+    const rows = await res.json();
+    window.__results = rows;
+
+    const statusVals = [...new Set(rows.map(r=>r.status).filter(Boolean))];
+    const sourceVals = [...new Set(rows.map(r=>r.source||'').filter(x=>x!==''))];
+    buildChips('chips-r-status', statusVals);
+    buildChips('chips-r-source', sourceVals);
+
+    renderResults(rows);
+  }
+
+  $('#txtRFilter').addEventListener('input', ()=>renderResults(window.__results||[]));
+  $('#btnRReload').addEventListener('click', loadResults);
+
+  loadResults();
+</script>
+}

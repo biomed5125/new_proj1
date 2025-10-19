@@ -1,0 +1,165 @@
+﻿@page "/lab/dashboard/orders"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab • Orders";
+}
+
+<style>
+    .chip {
+        padding: .25rem .55rem;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        cursor: pointer;
+        user-select: none;
+        font-size: .85rem;
+    }
+
+        .chip + .chip {
+            margin-left: .35rem
+        }
+
+        .chip.active {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+
+    .td-sub {
+        font-size: .825rem;
+        color: #6c757d
+    }
+
+    .badge-subtle {
+        background: #f1f3f5;
+        color: #495057;
+        font-weight: 500
+    }
+
+    .copy-btn {
+        border: 0;
+        background: transparent;
+        padding: 0 .25rem;
+        cursor: pointer
+    }
+
+    .table td, .table th {
+        vertical-align: middle;
+    }
+</style>
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between">
+        <h3 class="mb-0">Orders</h3>
+        <div class="d-flex align-items-center gap-2">
+            <input id="txtFilter" class="form-control form-control-sm" style="width:240px" placeholder="Filter (order/patient/test)…">
+            <button id="btnReload" class="btn btn-sm btn-primary">Reload</button>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-4 mt-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Status:</span>
+            <div id="chips-status"></div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Source:</span>
+            <div id="chips-source"></div>
+        </div>
+    </div>
+
+    <div class="table-responsive mt-3">
+        <table class="table table-sm" id="tblOrders">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:280px">OrderNo</th>
+                    <th>Patient</th>
+                    <th>Tests</th>
+                    <th style="width:120px">Status</th>
+                    <th style="width:190px">At</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // API returns rows like:
+        // { labRequestId, orderNo, patient, doctor, source, tests: ["GLU","NA"], status, atUtc }
+        const ORDERS_API = '/api/v1/lab/dashboard/orders';
+        const $ = (s, r=document)=>r.querySelector(s);
+
+        function badgeStatus(s){
+          const m={Requested:'warning',Partial:'info',Final:'success'};
+          return `<span class="badge text-bg-${m[s]||'secondary'}">${s}</span>`;
+        }
+        function copyToClipboard(txt){
+          if(!txt) return;
+          (navigator.clipboard?.writeText(txt) || Promise.reject()).catch(()=>{ /* ignore */ });
+        }
+        function buildChips(containerId, values){
+          const host = document.getElementById(containerId);
+          host.innerHTML = values.map(v=>`<span class="chip" data-val="${v||''}">${v||'—'}</span>`).join('');
+          host.addEventListener('click', e=>{
+            const c = e.target.closest('.chip'); if(!c) return;
+            c.classList.toggle('active');
+            renderOrders(window.__orders||[]);
+          });
+        }
+
+        function renderOrders(rows){
+          const f = ($('#txtFilter').value||'').toLowerCase().trim();
+          const actStat = new Set([...document.querySelectorAll('#chips-status .chip.active')].map(x=>x.dataset.val));
+          const actSrc  = new Set([...document.querySelectorAll('#chips-source .chip.active')].map(x=>x.dataset.val));
+
+          const pass = r=>{
+            if (actStat.size && !actStat.has(r.status)) return false;
+            const src = r.source || '';
+            if (actSrc.size && !actSrc.has(src)) return false;
+            const hay = [r.orderNo, r.patient, r.doctor, src, (r.tests||[]).join(',')].join(' ').toLowerCase();
+            return !f || hay.includes(f);
+          };
+
+          const tb = $('#tblOrders tbody');
+          tb.innerHTML = rows.filter(pass).map(x=>{
+            const tests = (x.tests||[]).join(',');
+            const at = x.atUtc ? new Date(x.atUtc).toLocaleString() : '';
+            const docBadge = x.doctor ? `<span class="badge badge-subtle me-1">${x.doctor}</span>` : '';
+            const srcBadge = x.source ? `<span class="badge badge-subtle">${x.source}</span>` : '';
+            const safeOrder = (x.orderNo||'').replace(/"/g,'&quot;');
+            return `<tr>
+              <td>
+                <a class="link-primary" href="/lab/dashboard/order?id=${x.labRequestId}">${x.orderNo}</a>
+                <button class="copy-btn" title="Copy" onclick="copyToClipboard('${safeOrder}')">📋</button>
+                <div class="td-sub">${docBadge}${srcBadge}</div>
+              </td>
+              <td>${x.patient ?? ''}</td>
+              <td>${tests}</td>
+              <td>${badgeStatus(x.status)}</td>
+              <td>${at}</td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="5" class="text-muted">No data.</td></tr>`;
+        }
+
+        async function loadOrders(){
+          $('#tblOrders tbody').innerHTML = `<tr><td colspan="5">Loading…</td></tr>`;
+          const res = await fetch(ORDERS_API);
+          const rows = await res.json();
+          window.__orders = rows;
+
+          // build chips from current dataset
+          const statusVals = [...new Set(rows.map(r=>r.status).filter(Boolean))];
+          const sourceVals = [...new Set(rows.map(r=>r.source||'').filter(x=>x!==''))];
+          buildChips('chips-status', statusVals);
+          buildChips('chips-source', sourceVals);
+
+          renderOrders(rows);
+        }
+
+        $('#txtFilter').addEventListener('input', ()=>renderOrders(window.__orders||[]));
+        $('#btnReload').addEventListener('click', loadOrders);
+
+        loadOrders();
+    </script>
+}

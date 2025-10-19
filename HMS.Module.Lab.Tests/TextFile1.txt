@@ -1,0 +1,60 @@
+﻿HMS.Api/                          
+│
+├─ Program.cs
+├─ Endpoints/
+│  |                        
+│  |-─ Barcodes/
+│  |   ├─ BarcodeEndpoints.cs   
+│  |   └─ Code128Render.cs    
+│  |                      
+│  └─ People/
+│     ├─ PeopleEndpoints.cs      
+│       
+|         
+│
+├─ Pages/
+│  ├─ _ViewImports.cshtml
+│  ├─ _ViewStart.cshtml
+│  ├─ _Layout.cshtml              ← main Razor layout (navbar etc.)
+│  ├─ Lab/
+│  │  ├─ _Layout.cshtml           ← optional Lab-only layout (if you want)
+│  │  ├─ Index.cshtml             ← redirect/landing to /Lab/Dashboard
+│  │  ├─ Dashboard/
+│  │  │  ├─ Index.cshtml          ← summary cards + latest orders/results
+│  │  │  ├─ Orders.cshtml
+│  │  │  ├─ Order.cshtml
+│  │  │  ├─ Results.cshtml
+│  │  │  └─ Samples.cshtml
+│  │  └─ Category/
+│  │     ├─ Tests.cshtml
+│  │     ├─ Panels.cshtml
+│  │     └─ InstrumentMaps.cshtml
+│  └─ Barcodes/
+│     └─ Generate.cshtml          ← barcode/QR generator tool
+│
+└─ wwwroot/
+   └─ (css/js if needed)
+
+
+
+HMS.Module.Lab/                   ← domain logic + data access for Lab
+├─ Features/
+│  └─ Lab/
+│     ├─ Dashboard/
+│     │  ├─ Dtos/
+│     │  │  └─ (DashOrderRowDto, SummaryDto, etc.)
+│     │  ├─ LabDashboardService.cs   ← ILabDashboardService + impl
+│     │  └─ (optionally) Endpoints.cs (if you expose REST)
+│     ├─ Services/
+│     │  ├─ ILabSampleService.cs
+│     │  └─ LabSampleService.cs
+│     └─ Models/Infrastructure/...   ← entities, DbContext live here
+└─ Infrastructure/
+   └─ Persistence/
+      └─ LabDbContext.cs
+
+
+HMS.SharedKernel/
+└─ Ids/
+   ├─ IBusinessIdGenerator.cs
+   └─ TimeBasedBusinessIdGenerator.cs

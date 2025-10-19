@@ -1,0 +1,221 @@
+﻿@page "/lab/catalog/instrument-maps"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab • Instrument Maping";
+}
+
+<div class="lab-container lab-main">
+
+    <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <h1 class="mb-1">Instrument Test Maping</h1>
+            <div class="text-muted small">Link LIS test codes to analyzer test codes.</div>
+        </div>
+        <div class="text-end">
+            <a class="btn btn-outline-secondary btn-sm" href="/lab/catalog/tests">↩ Back to Tests</a>
+        </div>
+    </div>
+
+    <!-- Filter / actions -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-3">
+            <form id="filterForm" class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Device Id</label>
+                    <input id="dev" class="form-control form-control-sm" value="1" style="width:120px" />
+                </div>
+                <div class="col-auto">
+                    <button id="btnLoad" type="button" class="btn btn-primary btn-sm">
+                        <span class="me-1" aria-hidden="true">🔄</span>Load
+                    </button>
+                    <button id="btnClear" type="button" class="btn btn-outline-secondary btn-sm">
+                        Clear
+                    </button>
+                </div>
+                <div class="col-auto">
+                    <span id="countBadge" class="badge bg-light text-secondary border small d-none"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data table -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tbl">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:90px">Device</th>
+                            <th style="width:110px">LabTestId</th>
+                            <th style="width:140px">LabTestCode</th>
+                            <th>LabTestName</th>
+                            <th style="width:200px">Instrument Test Code</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upsert -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+            <strong>Upsert Mapping</strong>
+        </div>
+        <div class="card-body">
+            <form id="frm" class="row g-2 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">DeviceId</label>
+                    <input class="form-control form-control-sm" id="uDeviceId" placeholder="DeviceId" value="1" style="width:120px" />
+                </div>
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">LabTestId</label>
+                    <input class="form-control form-control-sm" id="uLabTestId" placeholder="LabTestId" style="width:140px" />
+                </div>
+                <div class="col-auto">
+                    <label class="form-label form-label-sm mb-1">Instrument Test Code</label>
+                    <input class="form-control form-control-sm text-uppercase" id="uInstrumentCode" placeholder="Analyzer code" style="width:220px" />
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-success btn-sm">
+                        <span class="me-1" aria-hidden="true">💾</span>Save
+                    </button>
+                </div>
+            </form>
+
+            <div id="msg" class="small mt-2"></div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        const $  = (s, r = document) => r.querySelector(s);
+        const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+        // UI helpers -------------------------------------------------------------
+        function setLoading(tbody, loading) {
+            if (loading) {
+                tbody.innerHTML = `<tr>
+                  <td colspan="5" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Loading…
+                  </td></tr>`;
+            }
+        }
+        function showMsg(text, ok = true) {
+            const el = $('#msg');
+            el.className = `small mt-2 alert ${ok ? 'alert-success' : 'alert-danger'} py-2 px-3`;
+            el.textContent = text;
+            // auto-hide
+            setTimeout(() => { el.className = 'small mt-2'; el.textContent = ''; }, 3500);
+        }
+
+        // Data ops ---------------------------------------------------------------
+        async function load() {
+            const dev = $('#dev').value.trim();
+            const url = dev
+                ? `/api/v1/lab/catalog/instrument-maps?deviceId=${encodeURIComponent(dev)}`
+                : `/api/v1/lab/catalog/instrument-maps`;
+
+            const tbody = $('#tbl tbody');
+            setLoading(tbody, true);
+            $('#btnLoad').disabled = true;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(await res.text());
+                const rows = await res.json();
+
+                $('#countBadge').classList.toggle('d-none', rows.length === 0);
+                $('#countBadge').textContent = rows.length ? `${rows.length} rows` : '';
+
+                if (!rows.length) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">No data.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = rows.map(m => `
+                    <tr>
+                      <td><span class="badge bg-primary-subtle text-primary border">${m.deviceId}</span></td>
+                      <td class="text-muted">${m.labTestId}</td>
+                      <td><strong>${m.labTestCode ?? ''}</strong></td>
+                      <td>${m.labTestName ?? ''}</td>
+                      <td><code>${m.instrumentTestCode ?? ''}</code></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${err}</td></tr>`;
+            } finally {
+                $('#btnLoad').disabled = false;
+            }
+        }
+
+        // Events ----------------------------------------------------------------
+        $('#btnLoad').addEventListener('click', load);
+        $('#btnClear').addEventListener('click', () => {
+            $('#dev').value = '';
+            load();
+        });
+
+        // Enter on DeviceId triggers load
+        $('#dev').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); load(); }
+        });
+
+        // Upsert
+        $('#frm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const dto = {
+                deviceId: Number($('#uDeviceId').value),
+                labTestId: Number($('#uLabTestId').value),
+                instrumentTestCode: $('#uInstrumentCode').value.trim().toUpperCase()
+            };
+
+            if (!dto.deviceId || !dto.labTestId || !dto.instrumentTestCode) {
+                showMsg('All fields are required.', false);
+                return;
+            }
+
+            const btn = $('#frm button[type="submit"]');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/v1/lab/catalog/instrument-maps/upsert', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(dto)
+                });
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+
+                showMsg(`Saved: ${data.labTestCode} → ${data.instrumentTestCode}`);
+                $('#uInstrumentCode').value = '';
+                // Keep filters in sync (handy when device changed)
+                $('#dev').value = String(dto.deviceId);
+                await load();
+
+                // flash the updated row
+                const tbody = $('#tbl tbody');
+                const hit = $$('#tbl tbody tr').find(tr => tr.children[1]?.textContent.trim() == String(dto.labTestId));
+                if (hit) {
+                    hit.classList.add('table-success');
+                    setTimeout(() => hit.classList.remove('table-success'), 1200);
+                }
+            } catch (err) {
+                showMsg(String(err), false);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // Initial load
+        load();
+    </script>
+}

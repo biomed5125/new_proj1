@@ -1,0 +1,37 @@
+{
+  "deviceCode": "ROCHE1",
+  "frames": [
+    "<STX>H|\\^&|||ROCHE1^cobas^E601|||||20250906 081123<ETX><CR><LF>",
+    "<STX>P|1<ETX><CR><LF>",
+    "<STX>O|1||ACC-20250906-083120-191||||||||N<ETX><CR><LF>",
+    "<STX>R|1|^^^GLU$SC|105|mg/dL|70-110|N|F|20250906081123<ETX><CR><LF>",
+    "<STX>R|2|^^^NA|140|mmol/L|135-145|N|F|20250906081123<ETX><CR><LF>",
+    "<STX>L|1|N<ETX><CR><LF>"
+  ]
+}
+
+
+{ "patientId": 1, "testCodes": ["GLU","NA"] }
+
+ACC-20250912-054243-509
+
+{
+  "deviceCode": "ROCHE1",
+  "frames": [
+"<STX>H|\\^&|||ROCHE|cobas^E601|||||20250906081123<ETX><CR><LF>",
+"<STX>P|1<ETX><CR><LF>",
+"<STX>O|1|ACC-20250912-234645-186|<ETX><CR><LF>",
+"<STX>R|1|^^^GLU^SC|105|mg/dL|70-110|N|F|20250906081123<ETX><CR><LF>",
+"<STX>R|2|^^^NA^SC|140|mmol/L|135-145|N|F|20250906081123<ETX><CR><LF>",
+"<STX>L|1<N<ETX><CR><LF>"
+  ]
+}
+
+
+
+POST /api/v1/lab/catalog/instrument-maps
+{
+  "deviceId": 1,
+  "instrumentTestCode": "GLU",
+  "labCode": "GLU"
+}

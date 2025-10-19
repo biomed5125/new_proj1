@@ -1,0 +1,186 @@
+﻿@page "/comm/bench"
+@model dynamic
+@{
+    ViewData["Title"] = "Comm Bench";
+}
+
+@section Head {
+    <style>
+        /* Console look */
+        .console {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: .84rem;
+            line-height: 1.35rem;
+            background: #0b0f14;
+            color: #e6edf3;
+            border-radius: .5rem;
+            border: 1px solid rgba(255,255,255,.08);
+            height: 420px;
+            overflow: auto;
+            padding: .5rem .75rem;
+        }
+
+        .line {
+            white-space: pre;
+        }
+
+        .ts {
+            color: #9aa0a6;
+            opacity: .7;
+            margin-right: .4rem;
+        }
+
+        .dev {
+            color: #a5d6ff;
+        }
+
+        .tr {
+            color: #7bd0a5;
+            opacity: .9
+        }
+
+        .dir-in {
+            color: #87e39b;
+        }
+        /* IN = greenish */
+        .dir-out {
+            color: #ff8a80;
+        }
+        /* OUT = reddish */
+        .payload {
+            color: #e6edf3;
+        }
+
+        .dim {
+            opacity: .75;
+        }
+
+        .toolbar .btn {
+            --bs-btn-padding-y: .15rem;
+            --bs-btn-padding-x: .5rem;
+            --bs-btn-font-size: .75rem;
+        }
+    </style>
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <h3 class="mb-0">Communication Bench <small class="text-muted">Live</small></h3>
+        <div class="toolbar btn-group">
+            <button id="btnClear" class="btn btn-outline-secondary">Clear</button>
+            <button id="btnCopyIn" class="btn btn-outline-light">Copy IN</button>
+            <button id="btnCopyOut" class="btn btn-outline-light">Copy OUT</button>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <label class="form-label">Filter device</label>
+            <input id="fDevice" class="form-control form-control-sm" placeholder="Device code (optional)">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Direction</label>
+            <select id="fDir" class="form-select form-select-sm">
+                <option value="">All</option>
+                <option value="IN">IN</option>
+                <option value="OUT">OUT</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">Inbound (IN)</div>
+                <div class="card-body p-0">
+                    <div id="inPane" class="console"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">Outbound (OUT)</div>
+                <div class="card-body p-0">
+                    <div id="outPane" class="console"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.4/signalr.min.js"></script>
+    <script>
+        (() => {
+          const inPane  = document.getElementById('inPane');
+          const outPane = document.getElementById('outPane');
+          const fDevice = document.getElementById('fDevice');
+          const fDir    = document.getElementById('fDir');
+          const btnClear  = document.getElementById('btnClear');
+          const btnCopyIn = document.getElementById('btnCopyIn');
+          const btnCopyOut= document.getElementById('btnCopyOut');
+
+          const MAX_LINES = 1000;
+
+          btnClear.onclick = () => { inPane.innerHTML = ''; outPane.innerHTML = ''; };
+
+          btnCopyIn.onclick  = () => copyPane(inPane);
+          btnCopyOut.onclick = () => copyPane(outPane);
+
+          function copyPane(pane) {
+            const text = Array.from(pane.querySelectorAll('.line')).map(n => n.innerText).join('\n');
+            navigator.clipboard.writeText(text).catch(console.error);
+          }
+
+          function keepTrimmed(pane) {
+            const lines = pane.children.length;
+            if (lines > MAX_LINES) {
+              const remove = lines - MAX_LINES;
+              for (let i = 0; i < remove; i++) pane.removeChild(pane.firstChild);
+            }
+          }
+
+          function appendLine(pane, msg) {
+            const div = document.createElement('div');
+            div.className = 'line';
+
+            // parts: time, device, direction, transport, payload
+            const ts   = document.createElement('span'); ts.className = 'ts';    ts.textContent = `[${new Date(msg.atUtc).toLocaleTimeString()}]`;
+            const dev  = document.createElement('span'); dev.className = 'dev';   dev.textContent = ` ${msg.device}`;
+            const dir  = document.createElement('span'); dir.className = msg.direction === 'IN' ? 'dir-in' : 'dir-out'; dir.textContent = ` ${msg.direction}`;
+            const tr   = document.createElement('span'); tr.className  = 'tr dim'; tr.textContent = ` (${msg.transport}) `;
+            const pay  = document.createElement('span'); pay.className = 'payload'; pay.textContent = msg.frame;
+
+            div.appendChild(ts);
+            div.appendChild(dev);
+            div.appendChild(dir);
+            div.appendChild(tr);
+            div.appendChild(pay);
+
+            const nearBottom = pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 8;
+            pane.appendChild(div);
+            keepTrimmed(pane);
+            if (nearBottom) pane.scrollTop = pane.scrollHeight;
+          }
+
+          const conn = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/commtrace')
+            .withAutomaticReconnect()
+            .build();
+
+          conn.on('trace', msg => {
+            // filters
+            if (fDevice.value && !(`${msg.device||''}`.toLowerCase().includes(fDevice.value.toLowerCase()))) return;
+            if (fDir.value && msg.direction !== fDir.value) return;
+
+            const pane = (msg.direction === 'IN') ? inPane : outPane;
+            appendLine(pane, msg);
+          });
+
+          conn.start()
+            .then(() => console.log('✅ Connected to /hubs/commtrace'))
+            .catch(err => console.error('❌ SignalR connect failed:', err));
+        })();
+    </script>
+}

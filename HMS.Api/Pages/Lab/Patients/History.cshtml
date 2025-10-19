@@ -1,0 +1,81 @@
+﻿@page "/lab/patients/{id:long}/history"
+@model HMS.Api.Pages.Lab.Patients.HistoryModel
+@{
+  Layout = "_LayoutLab";
+  ViewData["Title"] = "Patient History";
+}
+
+<div class="container py-3">
+  <h3 class="mb-1">Patient History</h3>
+  <div class="text-muted small" id="hdr">@Model.PatientDisplay</div>
+
+  <div class="d-flex gap-2 mt-3">
+    <input type="date" id="from" class="form-control" style="max-width:180px">
+    <input type="date" id="to" class="form-control" style="max-width:180px">
+    <div class="btn-group">
+      <button class="btn btn-outline-secondary" data-p="30">Last 30d</button>
+      <button class="btn btn-outline-secondary" data-p="180">6m</button>
+      <button class="btn btn-outline-secondary" data-p="365">1y</button>
+    </div>
+    <button class="btn btn-primary" id="reload">Reload</button>
+  </div>
+
+  <div class="card mt-3">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0" id="tbl">
+        <thead class="table-light">
+          <tr>
+            <th>At</th><th>Order</th><th>Accession</th><th>Test</th>
+            <th class="text-end">Value</th><th>Unit</th><th>Status</th><th>Source</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="8" class="text-muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        const $=(s,r=document)=>r.querySelector(s);
+        const id = @Model.Id;
+
+        function setRange(days){
+          const to = new Date();
+          const from = new Date();
+          from.setDate(to.getDate()-days);
+          $('#from').value = from.toISOString().slice(0,10);
+          $('#to').value   = to.toISOString().slice(0,10);
+        }
+
+        async function load(){
+          const f = $('#from').value ? new Date($('#from').value) : null;
+          const t = $('#to').value ? new Date($('#to').value) : null;
+          const qs = `from=${encodeURIComponent((f??new Date()).toISOString())}&to=${encodeURIComponent((t??new Date()).toISOString())}`;
+          const r = await fetch(`/api/v1/lab/history/patient/${id}?${qs}`);
+          const data = await r.json();
+
+          $('#tbl tbody').innerHTML = data.map(x=>`
+            <tr>
+              <td>${new Date(x.atUtc).toLocaleString()}</td>
+              <td><a href="/lab/dashboard/order?id=${encodeURIComponent(x.orderNo?.split('-').pop() ?? '')}">${x.orderNo??''}</a></td>
+              <td>${x.accession??''}</td>
+              <td>${x.test??''}</td>                             <!-- fixed -->
+              <td class="text-end">${x.value??''}</td>
+              <td>${x.unit??''}</td>
+              <td><span class="badge text-bg-${x.status==='Final'?'success':(x.status==='Partial'?'warning text-dark':'secondary')}">${x.status}</span></td>
+              <td>${x.source??'-'}</td>
+            </tr>`).join('') || `<tr><td colspan="8" class="text-muted">No data.</td></tr>`;
+        }
+
+        document.querySelector('[data-p="30"]').addEventListener('click', ()=>{ setRange(30); load(); });
+        document.querySelector('[data-p="180"]').addEventListener('click',()=>{ setRange(180); load(); });
+        document.querySelector('[data-p="365"]').addEventListener('click',()=>{ setRange(365); load(); });
+        $('#reload').addEventListener('click', load);
+
+        // default: last 30 days
+        setRange(30);
+        load();
+    </script>
+}
+

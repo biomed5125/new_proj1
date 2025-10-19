@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="Areas\OR\Views\Shared\_Layout.OR.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\Admin\Controllers\" />
+    <Folder Include="Areas\Admin\Views\Home\" />
+    <Folder Include="Areas\Billing\Controllers\" />
+    <Folder Include="Areas\Billing\Views\Home\" />
+    <Folder Include="Areas\Doctor\Views\Home\" />
+    <Folder Include="Areas\Lab\Controllers\" />
+    <Folder Include="Areas\Lab\Views\Home\" />
+    <Folder Include="Areas\OR\Controllers\" />
+    <Folder Include="Areas\Reception\Views\Home\" />
+    <Folder Include="Middleware\" />
+    <Folder Include="TagHelpers\" />
+    <Folder Include="Services\ApiClients\" />
+    <Folder Include="ViewModels\Doctor\" />
+    <Folder Include="ViewModels\Lab\" />
+    <Folder Include="ViewModels\Shared\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Areas\OR\Views\Shared\_Layout.OR.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HMS.Sdk\HMS.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

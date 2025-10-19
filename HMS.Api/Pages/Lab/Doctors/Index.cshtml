@@ -1,0 +1,118 @@
+﻿@page "/lab/doctors"
+@model HMS.Api.Pages.Lab.Doctors.IndexModel
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Doctors";
+}
+
+<div class="container py-3">
+    <h3 class="mb-3">Doctors</h3>
+
+    <form method="post" class="card p-3 shadow-sm mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Full name</label>
+                <input asp-for="Form.FullName" class="form-control" />
+                <span asp-validation-for="Form.FullName" class="text-danger"></span>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">License</label>
+                <input asp-for="Form.LicenseNo" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Phone</label>
+                <input asp-for="Form.Phone" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Speciality</label>
+                <input asp-for="Form.Speciality" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Email</label>
+                <input asp-for="Form.Email" class="form-control" />
+            </div>
+            <div class="col-12 mt-2">
+                <button class="btn btn-primary">Add</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>License</th>
+                        <th>Phone</th>
+                        <th>Speciality</th>
+                        <th>Email</th>
+                        <th style="width:120px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Items)
+                    {
+                        <tr>
+                            <td>@d.FullName</td>
+                            <td>@d.LicenseNo</td>
+                            <td>@d.Phone</td>
+                            <td>@d.Speciality</td>
+                            <td>@d.Email</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a class="btn btn-outline-primary"
+                                       href="/lab/doctors/@d.LabDoctorId/history">History</a>
+                                    <button type="button" class="btn btn-outline-secondary js-peek"
+                                            data-id="@d.LabDoctorId">
+                                        Peek
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const $=(s,r=document)=>r.querySelector(s);
+
+        document.addEventListener('click', async (e)=>{
+          const b = e.target.closest('.js-peek');
+          if(!b) return;
+
+          const tr = b.closest('tr');
+          const id = b.dataset.id;
+
+          // toggle off if already opened
+          let next = tr.nextElementSibling;
+          if (next && next.classList.contains('peek-row')) {
+            next.remove();
+            return;
+          }
+
+          // load data
+          const res = await fetch(`/api/v1/lab/history/doctor/${id}?days=30`);
+          const data = await res.json();
+
+          const html = (data.length ? `
+            <ul class="mb-0 small">
+              ${data.slice(0,5).map(x=>`<li>
+                 ${new Date(x.atUtc).toLocaleString()} — ${x.patient??''} — ${x.tests??''}
+                 <span class="badge text-bg-${x.status==='Final'?'success':(x.status==='Partial'?'warning text-dark':'secondary')}">${x.status}</span>
+              </li>`).join('')}
+            </ul>
+          ` : `<span class="text-muted small">No activity in last 30 days.</span>`);
+
+          const row = document.createElement('tr');
+          row.className = 'peek-row';
+          row.innerHTML = `<td colspan="5" class="bg-light">${html}</td>`;
+          tr.insertAdjacentElement('afterend', row);
+        });
+    </script>
+}

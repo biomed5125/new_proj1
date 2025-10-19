@@ -1,0 +1,52 @@
+﻿<Window x:Class="HMS.CommBench.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="HMS CommBench" Height="600" Width="1000">
+    <DockPanel>
+        <StackPanel Orientation="Horizontal" Margin="6" DockPanel.Dock="Top">
+            <ComboBox Width="220"
+                ItemsSource="{Binding Devices}"
+                SelectedItem="{Binding SelectedDevice}"
+                DisplayMemberPath="DeviceCode" />
+            <Button Content="Refresh" Margin="6,0,0,0" Command="{Binding RefreshCmd}" />
+            <Button Content="Connect" Margin="6,0,0,0" Command="{Binding ConnectCmd}" />
+            <Button Content="Disconnect" Margin="6,0,0,0" Command="{Binding DisconnectCmd}" />
+            <Button Content="Send Demo ASTM" Margin="6,0,0,0" Command="{Binding SendDemoCmd}" />
+        </StackPanel>
+
+        <Grid Margin="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="IN" FontWeight="Bold" />
+            <DataGrid Grid.Row="0"
+                Margin="0,22,0,6"
+                ItemsSource="{Binding InTraces}"
+                AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Time" Binding="{Binding At}" Width="180"/>
+                    <DataGridTextColumn Header="Dir" Binding="{Binding Dir}" Width="60"/>
+                    <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Separator Grid.Row="1" Margin="0,8"/>
+
+            <StackPanel Grid.Row="2">
+                <TextBlock Text="OUT" FontWeight="Bold" />
+                <DataGrid Margin="0,6,0,0"
+                  ItemsSource="{Binding OutTraces}"
+                  AutoGenerateColumns="False" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Time" Binding="{Binding At}" Width="180"/>
+                        <DataGridTextColumn Header="Dir" Binding="{Binding Dir}" Width="60"/>
+                        <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>

@@ -1,0 +1,176 @@
+﻿@page "/lab/patients"
+@model HMS.Api.Pages.Lab.Patients.IndexModel
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Patients";
+}
+<div class="container py-3">
+    <h3 class="mb-3">Patients</h3>
+
+    <form method="post" class="card p-3 shadow-sm mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Full name</label>
+                <input asp-for="Form.FullName" class="form-control" />
+                <span asp-validation-for="Form.FullName" class="text-danger"></span>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">MRN</label>
+                <input asp-for="Form.MRN" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">DOB</label>
+                <input asp-for="Form.DateOfBirth" class="form-control" type="date" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Sex</label>
+                <select asp-for="Form.Sex" class="form-select">
+                    <option value=""></option>
+                    <option>M</option>
+                    <option>F</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Phone</label>
+                <input asp-for="Form.Phone" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Email</label>
+                <input asp-for="Form.Email" class="form-control" />
+            </div>
+            <div class="col-12 mt-2">
+                <button class="btn btn-primary">Add</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tblPatients">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>MRN</th>
+                        <th>DOB</th>
+                        <th>Sex</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th style="width:160px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Items)
+                    {
+                        <tr data-id="@p.LabPatientId">
+                            <td>@p.FullName</td>
+                            <td>@p.MRN</td>
+                            <td>@p.DateOfBirth?.ToString("yyyy-MM-dd")</td>
+                            <td>@p.Sex</td>
+                            <td>@p.Phone</td>
+                            <td>@p.Email</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a class="btn btn-outline-primary" href="/lab/patients/@p.LabPatientId/history">History</a>
+                                    <button type="button" class="btn btn-outline-secondary js-edit-prof" data-id="@p.LabPatientId" data-name="@p.FullName">Profile</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Profile modal -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Clinical Profile – <span id="profName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="profForm" class="row g-3">
+                    <input type="hidden" id="profPid">
+                    <div class="col-12 d-flex flex-wrap gap-3">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pDiabetic"><label class="form-check-label" for="pDiabetic">Diabetic</label></div>
+                        <div>
+                            <label class="form-label me-2">Thyroid</label>
+                            <select id="pThyroid" class="form-select form-select-sm" style="width:180px">
+                                <option value="0">None</option>
+                                <option value="1">Hyper</option>
+                                <option value="2">Hypo</option>
+                            </select>
+                        </div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pAnemia"><label class="form-check-label" for="pAnemia">Chronic anemia</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pDialysis"><label class="form-check-label" for="pDialysis">Dialysis</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pPacemaker"><label class="form-check-label" for="pPacemaker">Pacemaker</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pCardiac"><label class="form-check-label" for="pCardiac">Cardiac history</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pAllergy"><label class="form-check-label" for="pAllergy">Allergy</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pFatty"><label class="form-check-label" for="pFatty">Fatty liver</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="pHighChol"><label class="form-check-label" for="pHighChol">High cholesterol</label></div>
+                    </div>
+                    <div class="col-12">
+                        <input id="pAllergyNotes" class="form-control" placeholder="Allergy notes (drug/food)…">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="profSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const $=(s,r=document)=>r.querySelector(s);
+
+        async function loadProfile(pid){
+          const r=await fetch(`/api/v1/lab/patientprofile/${pid}`);
+          if(!r.ok){ alert(await r.text()); return; }
+          const x=await r.json();
+          $('#profPid').value = x.labPatientId;
+          $('#pDiabetic').checked = x.diabetic;
+          $('#pThyroid').value    = x.thyroid;
+          $('#pAnemia').checked   = x.chronicAnemia;
+          $('#pDialysis').checked = x.dialysis;
+          $('#pPacemaker').checked= x.pacemaker;
+          $('#pCardiac').checked  = x.cardiacHistory;
+          $('#pAllergy').checked  = x.allergy;
+          $('#pAllergyNotes').value = x.allergyNotes || '';
+          $('#pFatty').checked      = x.fattyLiver;
+          $('#pHighChol').checked   = x.highCholesterol;
+        }
+
+        document.addEventListener('click', async (e)=>{
+          const b = e.target.closest('.js-edit-prof');
+          if(!b) return;
+          $('#profName').textContent = b.dataset.name || '';
+          await loadProfile(b.dataset.id);
+          new bootstrap.Modal('#profileModal').show();
+        });
+
+        $('#profSave').addEventListener('click', async ()=>{
+          const pid = Number($('#profPid').value);
+          const body = {
+            labPatientId: pid,
+            diabetic: $('#pDiabetic').checked,
+            thyroid: Number($('#pThyroid').value),
+            chronicAnemia: $('#pAnemia').checked,
+            dialysis: $('#pDialysis').checked,
+            pacemaker: $('#pPacemaker').checked,
+            cardiacHistory: $('#pCardiac').checked,
+            allergy: $('#pAllergy').checked,
+            allergyNotes: ($('#pAllergyNotes').value||'').trim(),
+            fattyLiver: $('#pFatty').checked,
+            highCholesterol: $('#pHighChol').checked
+          };
+          const r=await fetch(`/api/v1/lab/patientprofile/${pid}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+          if(!r.ok){ alert(await r.text()); return; }
+          bootstrap.Modal.getInstance($('#profileModal')).hide();
+        });
+    </script>
+}

@@ -1,0 +1,109 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="CompositionRoot\**" />
+    <Compile Remove="Domain1\**" />
+    <Compile Remove="Domain\Abstractions\**" />
+    <Compile Remove="Domain\Enums\**" />
+    <Compile Remove="Infrastructure\Tracing\**" />
+    <Compile Remove="NewFolder\**" />
+    <Compile Remove="Options\**" />
+    <Compile Remove="Protocols\**" />
+    <Compile Remove="Services\**" />
+    <EmbeddedResource Remove="CompositionRoot\**" />
+    <EmbeddedResource Remove="Domain1\**" />
+    <EmbeddedResource Remove="Domain\Abstractions\**" />
+    <EmbeddedResource Remove="Domain\Enums\**" />
+    <EmbeddedResource Remove="Infrastructure\Tracing\**" />
+    <EmbeddedResource Remove="NewFolder\**" />
+    <EmbeddedResource Remove="Options\**" />
+    <EmbeddedResource Remove="Protocols\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="CompositionRoot\**" />
+    <None Remove="Domain1\**" />
+    <None Remove="Domain\Abstractions\**" />
+    <None Remove="Domain\Enums\**" />
+    <None Remove="Infrastructure\Tracing\**" />
+    <None Remove="NewFolder\**" />
+    <None Remove="Options\**" />
+    <None Remove="Protocols\**" />
+    <None Remove="Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Abstractions\AstmOptions.cs" />
+    <Compile Remove="Abstractions\IAstmOrderProvider.cs" />
+    <Compile Remove="Abstractions\IChannel.cs" />
+    <Compile Remove="Abstractions\IEventSink.cs" />
+    <Compile Remove="Abstractions\IFrameTracer.cs" />
+    <Compile Remove="Abstractions\IMessageRouter.cs" />
+    <Compile Remove="Abstractions\InboundEnvelope.cs" />
+    <Compile Remove="Abstractions\IOrderProvider.cs" />
+    <Compile Remove="Abstractions\IProtocolAdapter.cs" />
+    <Compile Remove="Abstractions\IRecordNormalizer.cs" />
+    <Compile Remove="Abstractions\ITransport.cs" />
+    <Compile Remove="Abstractions\OrderDownload.cs" />
+    <Compile Remove="Abstractions\OrderLine.cs" />
+    <Compile Remove="Abstractions\Pipeline.cs" />
+    <Compile Remove="Application\Mapping\DefaultAstmRecordMapper.cs" />
+    <Compile Remove="Application\Mapping\IRecordMapper.cs" />
+    <Compile Remove="Application\Mapping\LabOrderMapper.cs" />
+    <Compile Remove="Application\Mapping\LabResultMapper.cs" />
+    <Compile Remove="Application\Protocols\ASTM\AstmSession.cs" />
+    <Compile Remove="Application\Protocols\ASTM\RocheCobasAstmMapper.cs" />
+    <Compile Remove="Domain\Entities\Device.cs" />
+    <Compile Remove="Domain\Entities\InboxBatch.cs" />
+    <Compile Remove="Domain\Entities\InboxFrame.cs" />
+    <Compile Remove="Domain\Entities\Outbox.cs" />
+    <Compile Remove="Domain\Entities\OutboxState.cs" />
+    <Compile Remove="Hosting\DeviceHostedService.cs" />
+    <Compile Remove="Infrastructure\Drivers\RocheCobas\Cobas6000Driver.cs" />
+    <Compile Remove="Infrastructure\Drivers\RocheCobas\CobasC311Driver.cs" />
+    <Compile Remove="Infrastructure\Drivers\RocheCobas\CobasE411Driver.cs" />
+    <Compile Remove="Infrastructure\Persistence\CommEntities.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\CommMessageConfiguration.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\LabTestInstrumentMapConfiguration.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+    <PackageReference Include="FluentValidation" Version="11.0.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HMS.Module.Lab\HMS.Module.Lab.csproj" />
+    <ProjectReference Include="..\HMS.Realtime\HMS.Realtime.csproj" />
+    <ProjectReference Include="..\HMS.SharedKernel\HMS.SharedKernel.csproj" />
+    <ProjectReference Include="..\HMS.SharedServices\HMS.SharedServices.csproj" />
+  </ItemGroup>
+
+</Project>

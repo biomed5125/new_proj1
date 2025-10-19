@@ -1,0 +1,95 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Features\Dashboard\**" />
+    <Content Remove="Features\Dashboard\**" />
+    <EmbeddedResource Remove="Features\Dashboard\**" />
+    <None Remove="Features\Dashboard\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Features\Communication\Bench\AstmBench.cs" />
+    <Compile Remove="Features\Communication\Bench\BenchAnalyzerDriver.cs" />
+    <Compile Remove="Features\Communication\Bench\CommBenchEndpoints.cs" />
+    <Compile Remove="Infrastructure\Barcodes\MakeCode128.cs" />
+    <Compile Remove="Infrastructure\Barcodes\MakeDataMatrix.cs" />
+    <Compile Remove="Infrastructure\Ids\TimeBasedBusinessIdGenerator.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\LabRequestConfiguration.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\LabResultConfiguration.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\LabSampleConfiguration.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\LabTestConfiguration.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\AdmissionSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\BillingSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\DbSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\DoctorSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\PatientSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\RoomTypesSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\WardRoomsSeeder.cs" />
+    <Compile Remove="Infrastructure\Persistence\Seeders\WardSeeder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Common\Extensions\" />
+    <Folder Include="Common\Validation\" />
+    <Folder Include="Common\Results\" />
+    <Folder Include="Infrastructure\Ids\" />
+    <Folder Include="Infrastructure\Persistence\Converters\" />
+    <Folder Include="Infrastructure\Persistence\Seeders\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+    <PackageReference Include="BarcodeLib" Version="3.1.5" />
+    <PackageReference Include="FluentValidation" Version="11.0.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Razor.Runtime" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="SkiaSharp" Version="3.119.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="ZXing.Net" Version="0.16.10" />
+    <PackageReference Include="ZXing.Net.Bindings.SkiaSharp" Version="0.16.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HMS.Communication\HMS.Communication.csproj" />
+    <ProjectReference Include="..\HMS.Core\HMS.Core.csproj" />
+    <ProjectReference Include="..\HMS.Module.Admission\HMS.Module.Admission.csproj" />
+    <ProjectReference Include="..\HMS.Module.Appointment\HMS.Module.Appointment.csproj" />
+    <ProjectReference Include="..\HMS.Module.Doctor\HMS.Module.Doctor.csproj" />
+    <ProjectReference Include="..\HMS.Module.Lab\HMS.Module.Lab.csproj" />
+    <ProjectReference Include="..\HMS.Module.Patient\HMS.Module.Patient.csproj" />
+    <ProjectReference Include="..\HMS.Realtime\HMS.Realtime.csproj" />
+    <ProjectReference Include="..\HMS.SharedKernel\HMS.SharedKernel.csproj" />
+    <ProjectReference Include="..\HMS.SharedServices\HMS.SharedServices.csproj" />
+  </ItemGroup>
+
+</Project>

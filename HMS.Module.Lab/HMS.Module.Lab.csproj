@@ -1,0 +1,71 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Features\Lab\AdminEndpoints.cs" />
+    <Compile Remove="Features\Lab\Dashboard\LabDashboardEndpoints.cs" />
+    <Compile Remove="Features\Lab\EndpointHelpers.cs" />
+    <Compile Remove="Features\Lab\Endpoints\AdminEndpoints.cs" />
+    <Compile Remove="Features\Lab\Endpoints\LabEnpoints.cs" />
+    <Compile Remove="Features\Lab\Endpoints\WalkInOrderEndpoints.cs" />
+    <Compile Remove="Features\Lab\LabEnpoints.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\AddItemsDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\ApproveDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\CollectSampleDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\CreateLabRequestDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\EnterResultsDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\ReceiveDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\ReceiveSampleDto.cs" />
+    <Compile Remove="Features\Lab\Models\Dtos\WalkInDtos.cs" />
+    <Compile Remove="Features\Lab\Models\Entities\LabRequest.cs" />
+    <Compile Remove="Features\Lab\Models\Entities\LabRequestItem.cs" />
+    <Compile Remove="Features\Lab\Models\Entities\LabResult.cs" />
+    <Compile Remove="Features\Lab\Models\Entities\LabSample.cs" />
+    <Compile Remove="Features\Lab\Models\Entities\LabTest.cs" />
+    <Compile Remove="Features\Lab\Models\Entities\myInstrumentMapping.cs" />
+    <Compile Remove="Features\Lab\Service\ILabService.cs" />
+    <Compile Remove="Features\Lab\Service\LabService.cs" />
+    <Compile Remove="Features\Lab\Validations\LabValidator.cs" />
+    <Compile Remove="Infrastructure\Persistence\Configurations\InstrumentMappingConfiguration.cs" />
+    <Compile Remove="Infrastructure\Persistence\Entities.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+    <PackageReference Include="FluentValidation" Version="11.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HMS.SharedKernel\HMS.SharedKernel.csproj" />
+    <ProjectReference Include="..\HMS.SharedServices\HMS.SharedServices.csproj" />
+  </ItemGroup>
+
+</Project>

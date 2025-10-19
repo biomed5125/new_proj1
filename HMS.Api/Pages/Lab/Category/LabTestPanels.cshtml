@@ -1,0 +1,186 @@
+﻿@page "/lab/catalog/panels"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab • Lab Test Panels";
+}
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Lab Test Panels</h3>
+        <button id="btnNewPanel" class="btn btn-sm btn-success">+ New Panel</button>
+    </div>
+
+    <div class="d-flex gap-2 mb-3">
+        <input id="filter" class="form-control" style="max-width: 320px" placeholder="Search by code or name…">
+        <button id="reload" class="btn btn-sm btn-primary">Reload</button>
+        <span id="count" class="ms-auto text-muted small"></span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="tbl">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:140px;">Code</th>
+                    <th>Name</th>
+                    <th style="width:110px;">Active</th>
+                    <th>Tests</th>
+                    <th style="width:160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody><tr><td colspan="5">Loading…</td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Panel Modal -->
+<div class="modal" tabindex="-1" id="panelModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="panelForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="panelTitle">New Panel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="pId">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label form-label-sm">Code</label>
+                            <input id="pCode" class="form-control form-control-sm" maxlength="40">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Name</label>
+                            <input id="pName" class="form-control form-control-sm" maxlength="120">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label form-label-sm">Active</label>
+                            <select id="pActive" class="form-select form-select-sm">
+                                <option value="true" selected>Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label form-label-sm">Tests (Ctrl/⌘ to multi-select)</label>
+                            <select id="pTests" class="form-select" multiple size="10"></select>
+                            <div class="form-text">Tests will be saved in the current visible order.</div>
+                        </div>
+                    </div>
+                    <div id="pMsg" class="text-danger small mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" type="submit">Save</button>
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (()=> {
+          const $=(s,r=document)=>r.querySelector(s);
+          const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+          let tests=[], panels=[];
+
+          function render(){
+            const byId = new Map(tests.map(t=>[t.labTestId,t]));
+            const f = ($('#filter').value||'').toLowerCase();
+            const filtered = panels.filter(p => !f || p.code.toLowerCase().includes(f) || p.name.toLowerCase().includes(f));
+            $('#count').textContent = `${filtered.length} panel${filtered.length===1?'':'s'}`;
+
+            $('#tbl tbody').innerHTML = filtered.map(p=>{
+              const chips = (p.testIds||[]).map(id => byId.get(id))
+                .filter(Boolean)
+                .map(t=>`<span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis me-1 mb-1">${t.code} · ${t.name}</span>`).join(' ');
+              return `<tr>
+                <td class="fw-semibold">${p.code}</td>
+                <td>${p.name}</td>
+                <td>${p.isActive?'<span class="badge bg-success">Active</span>':'<span class="badge bg-secondary">Inactive</span>'}</td>
+                <td class="small">${chips||'<span class="text-muted">No tests</span>'}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" data-act="edit" data-id="${p.labPanelId}">Edit</button>
+                    <button class="btn btn-outline-danger" data-act="del" data-id="${p.labPanelId}">Delete</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('') || `<tr><td colspan="5" class="text-center text-muted py-4">No panels</td></tr>`;
+          }
+
+          async function load(){
+            $('#tbl tbody').innerHTML = '<tr><td colspan="5">Loading…</td></tr>';
+            const [ts, ps] = await Promise.all([
+              fetch('/api/v1/lab/catalog/tests').then(r=>r.json()),
+              fetch('/api/v1/lab/catalog/panels').then(r=>r.json())
+            ]);
+            tests = ts; panels = ps; render();
+          }
+
+          function openNew(){
+            $('#panelTitle').textContent='New Panel';
+            $('#pId').value='';
+            $('#pCode').disabled=false;
+            $('#panelForm').reset();
+            $('#pActive').value='true';
+            // fill test select
+            $('#pTests').innerHTML = tests.map(t=>`<option value="${t.labTestId}">${t.code} · ${t.name}</option>`).join('');
+            new bootstrap.Modal($('#panelModal')).show();
+          }
+
+          async function openEdit(id){
+            const p = await fetch(`/api/v1/lab/catalog/panels/${id}`).then(r=>r.ok?r.json():null);
+            if(!p){ alert('Not found'); return; }
+            $('#panelTitle').textContent=`Edit: ${p.code}`;
+            $('#pId').value=p.labPanelId;
+            $('#pCode').value=p.code; $('#pCode').disabled=true;
+            $('#pName').value=p.name;
+            $('#pActive').value=String(p.isActive);
+            $('#pTests').innerHTML = tests.map(t=>{
+              const sel = p.testIds.includes(t.labTestId) ? 'selected' : '';
+              return `<option value="${t.labTestId}" ${sel}>${t.code} · ${t.name}</option>`;
+            }).join('');
+            new bootstrap.Modal($('#panelModal')).show();
+          }
+
+          async function save(e){
+            e.preventDefault();
+            const ids = Array.from($('#pTests').selectedOptions).map(o=>Number(o.value));
+            const dto = {
+              Code: ($('#pCode').value||'').trim().toUpperCase(),
+              Name: ($('#pName').value||'').trim(),
+              IsActive: $('#pActive').value==='true',
+              TestIds: ids
+            };
+            const id = $('#pId').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/v1/lab/catalog/panels/${id}` : '/api/v1/lab/catalog/panels';
+
+            const res = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(dto)});
+            if(!res.ok){ $('#pMsg').textContent = 'Save failed'; return; }
+            bootstrap.Modal.getInstance($('#panelModal'))?.hide();
+            await load();
+          }
+
+          async function del(id){
+            if(!confirm('Delete this panel? If items are referenced, it will be retired.')) return;
+            const res = await fetch(`/api/v1/lab/catalog/panels/${id}`, { method:'DELETE' });
+            if(res.ok) await load(); else alert('Delete failed');
+          }
+
+          // events
+          $('#reload').addEventListener('click', load);
+          $('#filter').addEventListener('input', render);
+          $('#btnNewPanel').addEventListener('click', openNew);
+          $('#panelForm').addEventListener('submit', save);
+          $('#tbl').addEventListener('click', e=>{
+            const b = e.target.closest('button[data-act]');
+            if(!b) return;
+            const id = b.dataset.id;
+            if(b.dataset.act==='edit') openEdit(id);
+            if(b.dataset.act==='del') del(id);
+          });
+
+          load();
+        })();
+    </script>
+}

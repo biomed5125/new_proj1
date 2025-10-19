@@ -1,0 +1,43 @@
+﻿@* @{
+    ViewData["Title"] = "Doctor Eye-Bird Dashboard";
+}
+
+<div class="container" style="padding:20px;">
+    <h2>Doctor Eye-Bird Dashboard</h2>
+    <div style="margin:10px 0;">
+        <label>Doctor ID: </label>
+        <input id="doctorId" type="number" value="1" style="width:80px;" />
+        <button id="loadBtn">Load</button>
+    </div>
+
+    <pre id="out">Click "Load"…</pre>
+</div>
+
+<script>
+    (async function () {
+        const apiBase = '@(Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue<string>
+            (Context.RequestServices.GetService(typeof(IConfiguration)) as IConfiguration, "ApiBaseUrl"))';
+
+        async function load(doctorId) {
+            const out = document.getElementById('out');
+            out.textContent = 'Loading...';
+            try {
+                const resp = await fetch(`${apiBase}/api/dashboard/doctor/${doctorId}`);
+                if (!resp.ok) {
+                    out.textContent = `HTTP ${resp.status} ${resp.statusText}`;
+                    return;
+                }
+                const json = await resp.json();
+                out.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                out.textContent = 'Error: ' + (e?.message || e);
+            }
+        }
+
+        document.getElementById('loadBtn').addEventListener('click', () => {
+            const id = document.getElementById('doctorId').value || '1';
+            load(id);
+        });
+    })();
+</script>
+ *@

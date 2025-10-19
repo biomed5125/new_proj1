@@ -1,0 +1,249 @@
+﻿@page "/lab/catalog/tests"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Lab • Lab Tests";
+}
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Lab Tests</h3>
+        <button id="btnNew" class="btn btn-sm btn-success">+ New Test</button>
+    </div>
+
+    <div class="row g-2 mb-3">
+        <div class="col-auto"><input id="f" class="form-control form-control-sm" placeholder="Filter code/name…"></div>
+        <div class="col-auto"><button id="reload" class="btn btn-sm btn-primary">Reload</button></div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm" id="tbl">
+            <thead class="table-light">
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Specimen</th>
+                    <th>Unit</th>
+                    <th class="text-end">Price</th>
+                    <th class="text-end">RefLow</th>
+                    <th class="text-end">RefHigh</th>
+                    <th class="text-end">StabilityFrozenDays</th>
+                    <th class="text-end">TatMinutes</th>
+                    <th>Active</th>
+                    <th style="width:140px">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" tabindex="-1" id="testModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="testForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">New Test</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="mTestId">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Code</label>
+              <input id="mCode" class="form-control form-control-sm" maxlength="40">
+            </div>
+            <div class="col-md-5">
+              <label class="form-label form-label-sm">Name</label>
+              <input id="mName" class="form-control form-control-sm" maxlength="120">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm">Specimen</label>
+              <select id="mSpecimen" class="form-select form-select-sm"></select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Unit</label>
+              <input id="mUnit" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Price</label>
+              <input id="mPrice" type="number" step="0.01" class="form-control form-control-sm" value="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Ref Low</label>
+              <input id="mRefLow" type="number" step="0.0001" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Ref High</label>
+              <input id="mRefHigh" type="number" step="0.0001" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Stability Frozen (days)</label>
+              <input id="mStabilityDays" type="number" step="1" class="form-control form-control-sm" value="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">TAT (min)</label>
+              <input id="mTat" type="number" step="1" class="form-control form-control-sm" value="60">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label form-label-sm">Active</label>
+              <select id="mActive" class="form-select form-select-sm">
+                <option value="true" selected>Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="formMsg" class="text-danger small mt-2"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+  const $  = (s,r=document)=>r.querySelector(s);
+  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+  let specimens = [];
+
+  async function loadSpecimens(){
+    specimens = await fetch('/api/v1/lab/catalog/specimens').then(r=>r.json());
+    $('#mSpecimen').innerHTML = specimens.map(s=>`<option value="${s.specimenTypeId}">${s.name}</option>`).join('');
+  }
+
+  function filt(){
+    const q = $('#f').value.toLowerCase();
+    $$('#tbl tbody tr').forEach(tr=>{
+      tr.style.display = q==='' || tr.innerText.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function rowActions(t){
+    return `
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-primary" data-act="edit" data-id="${t.labTestId}">Edit</button>
+        <button class="btn btn-outline-danger" data-act="del" data-id="${t.labTestId}">Delete</button>
+      </div>`;
+  }
+
+  async function load(){
+    $('#tbl tbody').innerHTML = `<tr><td colspan="11">Loading…</td></tr>`;
+    const rows = await fetch('/api/v1/lab/catalog/tests').then(r=>r.json());
+    $('#tbl tbody').innerHTML = rows.map(t=>`
+      <tr>
+        <td><strong>${t.code}</strong></td>
+        <td>${t.name}</td>
+        <td>${t.specimen}</td>
+        <td>${t.unit??''}</td>
+        <td class="text-end">${t.price?.toFixed?.(2) ?? t.price ?? ''}</td>
+        <td class="text-end">${t.refLow ?? ''}</td>
+        <td class="text-end">${t.refHigh ?? ''}</td>
+        <td class="text-end">${t.stabilityFrozenDays ?? ''}</td>
+        <td class="text-end">${t.tatMinutes ?? ''}</td>
+        <td>${t.isActive?'Yes':'No'}</td>
+        <td>${rowActions(t)}</td>
+      </tr>`).join('');
+    filt();
+  }
+
+  function openNew(){
+    $('#modalTitle').textContent = 'New Test';
+    $('#mTestId').value = '';
+    $('#testForm').reset();
+    $('#mCode').disabled = false;
+    $('#mActive').value = 'true';
+    $('#mTat').value = 60;
+    $('#mStabilityDays').value = 0;
+    $('#formMsg').textContent = '';
+    new bootstrap.Modal($('#testModal')).show();
+  }
+
+  async function openEdit(id){
+    const t = await fetch(`/api/v1/lab/catalog/tests/${id}`).then(r=>r.ok?r.json():null);
+    if(!t){ alert('Not found'); return; }
+
+    $('#modalTitle').textContent = `Edit: ${t.code}`;
+    $('#mTestId').value   = t.labTestId;
+    $('#mCode').value     = t.code;
+    $('#mCode').disabled  = !!t.isMapped;                    // lock if mapped
+    $('#mCode').title     = t.isMapped ? `Locked – ${t.mappingsCount} instrument mapping(s)` : '';
+
+    $('#mName').value     = t.name;
+    $('#mSpecimen').value = t.specimenTypeId;
+    $('#mUnit').value     = t.unit ?? '';
+    $('#mPrice').value    = t.price ?? 0;
+    $('#mRefLow').value   = t.refLow ?? '';
+    $('#mRefHigh').value  = t.refHigh ?? '';
+    $('#mStabilityDays').value = t.stabilityFrozenDays ?? 0;
+    $('#mTat').value      = t.tatMinutes ?? 60;
+    $('#mActive').value   = String(t.isActive);
+
+    $('#formMsg').textContent = '';
+    new bootstrap.Modal($('#testModal')).show();
+  }
+
+  async function save(e){
+    e.preventDefault();
+    const dto = {
+      Code: ($('#mCode').value||'').trim().toUpperCase(),
+      Name: ($('#mName').value||'').trim(),
+      SpecimenTypeId: Number($('#mSpecimen').value),
+      Unit: ($('#mUnit').value||'').trim(),
+      Price: Number($('#mPrice').value||0),
+      RefLow: $('#mRefLow').value===''? null : Number($('#mRefLow').value),
+      RefHigh: $('#mRefHigh').value===''? null : Number($('#mRefHigh').value),
+      StabilityFrozenDays: $('#mStabilityDays').value===''? null : Number($('#mStabilityDays').value),
+      TatMinutes: Number($('#mTat').value||0),
+      IsActive: $('#mActive').value==='true'
+    };
+
+    const id = $('#mTestId').value;
+    const method = id ? 'PUT' : 'POST';
+    const url    = id ? `/api/v1/lab/catalog/tests/${id}` : '/api/v1/lab/catalog/tests';
+
+    const res = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(dto) });
+    if(!res.ok){
+      try{
+        const pb = await res.json();
+        $('#formMsg').textContent = pb?.title || pb?.detail || 'Validation error';
+      }catch{ $('#formMsg').textContent = 'Failed to save.'; }
+      return;
+    }
+    bootstrap.Modal.getInstance($('#testModal'))?.hide();
+    await load();
+  }
+
+  async function del(id){
+    if(!confirm('Delete this test? If referenced, it will be retired.')) return;
+    const res = await fetch(`/api/v1/lab/catalog/tests/${id}`, { method:'DELETE' });
+    if(res.ok) await load(); else alert('Delete failed.');
+  }
+
+  // events
+  $('#reload').addEventListener('click', load);
+  $('#f').addEventListener('input', filt);
+  $('#btnNew').addEventListener('click', openNew);
+  $('#testForm').addEventListener('submit', save);
+  $('#tbl').addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-act]');
+    if(!btn) return;
+    const id = btn.dataset.id;
+    if(btn.dataset.act==='edit') openEdit(id);
+    if(btn.dataset.act==='del')  del(id);
+  });
+
+  // init
+  Promise.all([loadSpecimens(), load()]);
+})();
+</script>
+}
+

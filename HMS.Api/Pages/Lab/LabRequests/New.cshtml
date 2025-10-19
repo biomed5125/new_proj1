@@ -1,0 +1,421 @@
+﻿@page "/lab/orders/new"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "New Request";
+}
+<style>
+    .chip {
+        padding: .2rem .5rem;
+        border: 1px solid #dee2e6;
+        border-radius: 999px;
+        font-size: .8rem
+    }
+
+        .chip + .chip {
+            margin-left: .35rem
+        }
+
+    .picker-list {
+        position: relative
+    }
+
+    .picker-drop {
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-top: 0;
+        max-height: 220px;
+        overflow: auto
+    }
+
+    .picker-item {
+        padding: .35rem .5rem;
+        cursor: pointer
+    }
+
+        .picker-item:hover {
+            background: #f8f9fa
+        }
+
+    .badge-subtle {
+        background: #f1f3f5;
+        color: #495057;
+        font-weight: 500
+    }
+
+    .code-pill {
+        font-weight: 600;
+        font-size: .75rem;
+        padding: .15rem .35rem;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px
+    }
+</style>
+
+<div class="container py-3">
+    <h3 class="mb-3">New Request</h3>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Patient -->
+                <div class="col-lg-6">
+                    <label class="form-label">Patient</label>
+                    <div class="picker-list">
+                        <input id="patPick" class="form-control" placeholder="Search patient…" autocomplete="off">
+                        <div id="patDrop" class="picker-drop d-none"></div>
+                    </div>
+                    <input type="hidden" id="patId">
+                    <div id="patChips" class="mt-2 d-flex gap-1 flex-wrap"></div>
+                </div>
+
+                <!-- Sex / DOB -->
+                <div class="col-lg-2">
+                    <label class="form-label">Sex</label>
+                    <select id="sex" class="form-select">
+                        <option value="">—</option>
+                        <option>M</option>
+                        <option>F</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label">DOB</label>
+                    <input id="dob" type="date" class="form-control">
+                </div>
+
+                <!-- Doctor -->
+                <div class="col-lg-6">
+                    <label class="form-label">Doctor</label>
+                    <div class="picker-list">
+                        <input id="docPick" class="form-control" placeholder="Search doctor…" autocomplete="off">
+                        <div id="docDrop" class="picker-drop d-none"></div>
+                    </div>
+                    <input type="hidden" id="docId">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pre-analytical -->
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span>Pre-analytical</span>
+            <a id="paToggle" class="small" href="javascript:void(0)">show/hide</a>
+        </div>
+        <div class="card-body" id="paBody" style="display:none">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="paDiab"><label class="form-check-label">Diabetic</label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="paAbx"><label class="form-check-label">Antibiotic (last 3 days)</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Fasting (hrs)</label>
+                    <input type="number" id="paFast" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Thyroid</label>
+                    <select id="paThy" class="form-select"><option>None</option><option>Hyper</option><option>Hypo</option></select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Notes</label>
+                    <textarea id="paNotes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tests -->
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <strong>Requested Tests</strong>
+                <span class="text-muted small ms-2">Select tests; use the filter to narrow the list.</span>
+                <a id="testsToggle" class="small ms-2" href="javascript:void(0)">show/hide</a>
+            </div>
+            <div class="d-flex gap-2">
+                <input id="tFilter" class="form-control form-control-sm" style="width:240px" placeholder="Filter (code/name)…">
+                <button id="tReload" class="btn btn-sm btn-outline-secondary">Reload</button>
+                <button id="tPick" class="btn btn-sm btn-primary">Pick tests</button>
+            </div>
+        </div>
+        <div class="card-body p-0" id="testsWrap" style="display:block">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th style="width:42px"></th><th style="width:100px">Code</th><th>Name</th><th style="width:110px">Unit</th><th class="text-end" style="width:110px">Price</th></tr>
+                    </thead>
+                    <tbody id="tBody"><tr><td colspan="5" class="text-muted">Loading…</td></tr></tbody>
+                </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small">
+                <div><span id="tCount">0</span> selected – <b>Total</b>: <span id="tTotal">0.00</span></div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check">
+                        <input id="collectNow" class="form-check-input" type="checkbox" checked>
+                        <label class="form-check-label">Collect sample now</label>
+                    </div>
+                    <button id="createBtn" class="btn btn-primary btn-sm">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pick tests modal -->
+<div class="modal fade" id="pickModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pick tests</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex gap-2 mb-2">
+                    <input id="pmFilter" class="form-control" placeholder="Filter (code/name)…">
+                    <button id="pmReload" class="btn btn-outline-secondary btn-sm">Reload</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light"><tr><th style="width:42px"></th><th style="width:100px">Code</th><th>Name</th><th style="width:110px">Unit</th><th class="text-end" style="width:110px">Price</th></tr></thead>
+                        <tbody id="pmBody"></tbody>
+                    </table>
+                </div>
+                <div class="small text-muted" id="pmFoot">No tests selected</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary btn-sm" data-bs-dismiss="modal">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+          const $=(s,r=document)=>r.querySelector(s);
+          const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+
+          const state = {
+            tests: [],               // [{ labTestId, code, name, unit, price }]
+            selected: new Set(),     // Set<number> labTestId
+          };
+
+          // ---------- helpers ----------
+          const money = v => (Number(v||0)).toFixed(2);
+
+          function renderTotals(){
+            const rows = state.tests.filter(t => state.selected.has(t.labTestId));
+            const total = rows.reduce((s,t)=>s + Number(t.price||0), 0);
+            const cnt = rows.length;
+            if ($('#tCount')) $('#tCount').textContent = cnt;
+            if ($('#tTotal')) $('#tTotal').textContent = money(total);
+          }
+
+          function rowHtml(t, checked){
+            return `<tr data-id="${t.labTestId}">
+              <td><input type="checkbox" class="tchk"${checked?' checked':''}></td>
+              <td><span class="code-pill">${t.code}</span></td>
+              <td>${t.name}</td>
+              <td>${t.unit ?? ''}</td>
+              <td class="text-end">${money(t.price)}</td>
+            </tr>`;
+          }
+
+          // ---------- load tests ----------
+          async function loadTests(){
+            if ($('#tBody')) $('#tBody').innerHTML = `<tr><td colspan="5" class="text-muted">Loading…</td></tr>`;
+            try{
+              const r = await fetch('/api/v1/lab/catalog/tests');
+              if(!r.ok) throw new Error(await r.text());
+              const list = await r.json();
+              state.tests = (list||[]).map(x => ({
+                labTestId: x.labTestId, code: x.code, name: x.name, unit: x.unit, price: x.price
+              }));
+              renderTestTable();
+              renderPickModal();
+            }catch(err){
+              if ($('#tBody')) $('#tBody').innerHTML = `<tr><td colspan="5" class="text-danger">Failed to load tests: ${String(err).slice(0,200)}</td></tr>`;
+            }
+          }
+
+          function renderTestTable(){
+            if (!$('#tBody')) return;
+            const f = ($('#tFilter')?.value||'').trim().toLowerCase();
+            const rows = state.tests
+              .filter(t => !f || (t.code + ' ' + t.name).toLowerCase().includes(f))
+              .map(t => rowHtml(t, state.selected.has(t.labTestId)));
+            $('#tBody').innerHTML = rows.join('') || `<tr><td colspan="5" class="text-muted">No tests.</td></tr>`;
+          }
+
+          // ---------- Pick modal ----------
+          function renderPickModal(){
+            if (!$('#pmBody')) return;
+            const f = ($('#pmFilter')?.value||'').trim().toLowerCase();
+            const rows = state.tests
+              .filter(t => !f || (t.code + ' ' + t.name).toLowerCase().includes(f))
+              .map(t => `<tr data-id="${t.labTestId}">
+                <td><input type="checkbox" class="pmchk"${state.selected.has(t.labTestId)?' checked':''}></td>
+                <td><span class="code-pill">${t.code}</span></td>
+                <td>${t.name}</td>
+                <td>${t.unit ?? ''}</td>
+                <td class="text-end">${money(t.price)}</td>
+              </tr>`);
+            $('#pmBody').innerHTML = rows.join('') || `<tr><td colspan="5" class="text-muted">No tests.</td></tr>`;
+            updatePmFoot();
+          }
+          function updatePmFoot(){
+            if ($('#pmFoot')) $('#pmFoot').textContent = state.selected.size ? `${state.selected.size} selected` : 'No tests selected';
+          }
+
+          // ---------- patient/doctor pickers ----------
+          function buildPicker(inId, dropId, urlBase, onPick){
+            const inp = $(inId), drop = $(dropId);
+            if (!inp || !drop) return;
+
+            let timer = 0;
+            async function query(q){
+              if ((q||'').trim().length < 2){ drop.classList.add('d-none'); drop.innerHTML=''; return; }
+              try{
+                const r = await fetch(`${urlBase}?q=${encodeURIComponent(q)}&take=10`);
+                if(!r.ok) throw new Error(await r.text());
+                const rows = await r.json();
+                drop.innerHTML = rows.map(x=>`<div class="picker-item" data-id="${x.id}" data-name="${x.name}">${x.name}</div>`).join('')
+                  || `<div class="p-2 text-muted">No matches</div>`;
+                drop.classList.remove('d-none');
+              }catch{
+                drop.innerHTML = `<div class="p-2 text-danger">Error</div>`;
+                drop.classList.remove('d-none');
+              }
+            }
+            inp.addEventListener('input', ()=>{
+              clearTimeout(timer); timer = setTimeout(()=>query(inp.value), 250);
+            });
+            drop.addEventListener('click', e=>{
+              const it = e.target.closest('.picker-item'); if(!it) return;
+              inp.value = it.dataset.name;
+              drop.classList.add('d-none');
+              onPick({ id:Number(it.dataset.id), name:it.dataset.name });
+            });
+            document.addEventListener('click', e=>{
+              if (!drop.contains(e.target) && e.target!==inp) drop.classList.add('d-none');
+            });
+          }
+
+          // use YOUR lookups
+          buildPicker('#patPick','#patDrop','/api/v1/lab/refs/patients', async (p)=>{
+            if ($('#patId')) $('#patId').value = String(p.id);
+
+            // chips from patient profile
+            try{
+              const r = await fetch(`/api/v1/lab/patientprofile/${p.id}`);
+              if(r.ok){
+                const x = await r.json();
+                const host = $('#patChips'); if (!host) return;
+                host.innerHTML='';
+                const add=(txt,cls)=>{ const s=document.createElement('span'); s.className='chip '+cls; s.textContent=txt; host.appendChild(s); };
+                if(x.diabetic) add('Diabetic','bg-danger text-white');
+                if(x.thyroid===1) add('Hyper','bg-warning text-dark');
+                if(x.thyroid===2) add('Hypo','bg-warning text-dark');
+                if(x.allergy) add('Allergy','bg-danger text-white');
+                if(x.fattyLiver) add('Fatty liver','bg-secondary text-white');
+                if(x.highCholesterol) add('High cholesterol','bg-secondary text-white');
+                if(x.cardiacHistory) add('Cardiac hx','bg-secondary text-white');
+                if(x.dialysis) add('Dialysis','bg-secondary text-white');
+                if(x.pacemaker) add('Pacemaker','bg-secondary text-white');
+              }
+            }catch{}
+          });
+
+          buildPicker('#docPick','#docDrop','/api/v1/lab/refs/doctors', d=>{
+            if ($('#docId')) $('#docId').value = String(d.id);
+          });
+
+          // ---------- events ----------
+          $('#tFilter')?.addEventListener('input', renderTestTable);
+          $('#tReload')?.addEventListener('click', loadTests);
+
+          $('#tBody')?.addEventListener('change', e=>{
+            const cb = e.target.closest('.tchk'); if(!cb) return;
+            const id = Number(e.target.closest('tr').dataset.id);
+            cb.checked ? state.selected.add(id) : state.selected.delete(id);
+            renderTotals();
+            const pm = $('#pickModal');
+            if (pm && pm.classList.contains('show')){
+              const row = $(`#pmBody tr[data-id="${id}"]`); row?.querySelector('.pmchk')?.toggleAttribute('checked', cb.checked);
+              updatePmFoot();
+            }
+          });
+
+          const bsModal = ()=> new bootstrap.Modal('#pickModal');
+          $('#tPick')?.addEventListener('click', ()=>{
+            renderPickModal();
+            try{ bsModal().show(); }catch{}
+          });
+          $('#pmFilter')?.addEventListener('input', renderPickModal);
+          $('#pmReload')?.addEventListener('click', renderPickModal);
+          $('#pmBody')?.addEventListener('change', e=>{
+            const cb = e.target.closest('.pmchk'); if(!cb) return;
+            const id = Number(e.target.closest('tr').dataset.id);
+            cb.checked ? state.selected.add(id) : state.selected.delete(id);
+            const row = $(`#tBody tr[data-id="${id}"]`); if(row) row.querySelector('.tchk').checked = cb.checked;
+            renderTotals(); updatePmFoot();
+          });
+
+          // ---------- Create ----------
+          $('#createBtn')?.addEventListener('click', async ()=>{
+            const dto = {
+              patientId: $('#patId')?.value ? Number($('#patId').value) : null,
+              patientName: $('#patId')?.value ? null : ($('#patPick')?.value || '').trim() || null,
+              sex: $('#sex')?.value || null,
+              dob: $('#dob')?.value ? new Date($('#dob').value).toISOString() : null,
+
+              doctorId: $('#docId')?.value ? Number($('#docId').value) : null,
+              doctorName: $('#docId')?.value ? null : ($('#docPick')?.value || '').trim() || null,
+
+              testIds: Array.from(state.selected),
+              collectNow: !!$('#collectNow')?.checked,
+
+              pre: {
+                isDiabetic: !!$('#preDiabetic')?.checked,
+                tookAntibioticLast3Days: !!$('#preAbx')?.checked,
+                fastingHours: $('#preFasting')?.value ? Number($('#preFasting').value) : null,
+                thyroidStatus: $('#preThyroid')?.value || 'None',
+                notes: ($('#preNotes')?.value || '').trim() || null
+              }
+            };
+
+            if (!dto.patientId && !dto.patientName){ alert('Pick a patient or type a name.'); return; }
+            if (!dto.testIds.length){ alert('Pick at least one test.'); return; }
+
+            const btn = $('#createBtn'); if (btn) btn.disabled = true;
+            try{
+              const r = await fetch('/api/v1/lab/orders/walkin', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(dto)
+              });
+              if(!r.ok) throw new Error(await r.text());
+              const out = await r.json(); // { labRequestId, orderNo, accession? }
+              location.href = `/lab/dashboard/order?id=${out.labRequestId}`;
+            }catch(err){
+              alert(String(err).slice(0,800));
+            }finally{
+              if (btn) btn.disabled = false;
+            }
+          });
+
+          // init
+          loadTests();
+        })();
+    </script>
+}
+

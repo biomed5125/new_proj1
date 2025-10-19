@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-HMS.Communication.newHost-b38a3c47-2401-4dbc-8c88-e7c995fc7961</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HMS.Api\HMS.Api.csproj" />
+    <ProjectReference Include="..\HMS.Module.Lab\HMS.Module.Lab.csproj" />
+    <ProjectReference Include="..\HMS.SharedKernel\HMS.SharedKernel.csproj" />
+    <ProjectReference Include="..\HMS.SharedServices\HMS.SharedServices.csproj" />
+  </ItemGroup>
+</Project>

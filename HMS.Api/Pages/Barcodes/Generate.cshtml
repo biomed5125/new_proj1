@@ -1,0 +1,46 @@
+﻿@page "/barcodes/generate"
+@model dynamic
+@{
+    ViewData["Title"] = "Generate Barcode / QR";
+}
+
+<div class="container py-3">
+    <h2>Generate Barcode / QR</h2>
+
+    <form id="barcodeForm" class="row g-3">
+        <div class="col-md-6">
+            <label for="text" class="form-label">Text / Code</label>
+            <input type="text" id="text" class="form-control" placeholder="Enter MRN, OrderNo, etc." required />
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary">Generate</button>
+        </div>
+    </form>
+
+    <div class="row mt-4">
+        <div class="col-md-6 text-center">
+            <h5>Code128 Barcode</h5>
+            <img id="barcodeImg" class="border p-2" style="max-width:100%" />
+        </div>
+        <div class="col-md-6 text-center">
+            <h5>QR Code</h5>
+            <img id="qrImg" class="border p-2" style="max-width:100%" />
+        </div>
+    </div>
+
+    <div class="mt-3 text-center">
+        <button onclick="window.print()" class="btn btn-secondary">Print</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("barcodeForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const text = document.getElementById("text").value;
+
+            document.getElementById("barcodeImg").src = `/api/barcodes/code128/${encodeURIComponent(text)}`;
+            document.getElementById("qrImg").src = `/api/barcodes/qr/${encodeURIComponent(text)}`;
+        });
+    </script>
+}

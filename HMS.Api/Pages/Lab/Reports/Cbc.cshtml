@@ -1,0 +1,152 @@
+﻿@page "/lab/reports/cbc"
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "CBC Report";
+}
+<style>
+.report-a4 { background:#fff; padding:18mm; max-width:210mm; margin:auto; box-shadow:0 0 12px rgba(0,0,0,.05) }
+h4 { margin:0 0 6px 0 }
+.hr { border-bottom:1px solid #ccc; margin:8px 0 12px 0 }
+.tbl { width:100%; border-collapse:collapse; font-size:13px }
+.tbl th, .tbl td { padding:4px 6px; border-bottom:1px dotted #ddd; vertical-align:top }
+.tbl th { text-align:left; background:#f7f7f7 }
+.small { font-size:11px; color:#666 }
+.right { text-align:right }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px }
+.box { border:1px solid #ddd; border-radius:6px; padding:8px }
+.chart-title { font-size:12px; text-align:center; margin:4px 0 }
+@@media print { .report-a4 { box-shadow:none; margin:0; } .noprint { display:none } }
+.flagH { color:#d6336c; font-weight:600 }
+</style>
+
+<div class="report-a4">
+  <div class="d-flex justify-content-between align-items-end">
+    <h4>HAEMATOLOGY — CBC</h4>
+    <div class="small">Printed: <span id="pNow"></span></div>
+  </div>
+  <div class="hr"></div>
+
+  <div class="grid-2">
+    <div class="box">
+      <div class="small"><strong>Patient:</strong> <span id="pName"></span> • <strong>ID:</strong> <span id="pId"></span></div>
+      <div class="small"><strong>Order:</strong> <span id="pOrd"></span> • <strong>Accession:</strong> <span id="pAcc"></span></div>
+      <div class="small"><strong>Collected:</strong> <span id="pCol"></span> • <strong>Reported:</strong> <span id="pRep"></span></div>
+    </div>
+    <div class="grid-3">
+      <div class="box"><div class="chart-title">WBC Histogram</div><canvas id="cWbc" width="360" height="150"></canvas></div>
+      <div class="box"><div class="chart-title">RBC Histogram</div><canvas id="cRbc" width="360" height="150"></canvas></div>
+      <div class="box"><div class="chart-title">PLT Histogram</div><canvas id="cPlt" width="360" height="150"></canvas></div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <table class="tbl" id="tblCbc">
+    <thead>
+      <tr><th style="width:38%">Test</th><th class="right">Result</th><th style="width:15%">Units</th><th class="right">Normal Ranges</th></tr>
+    </thead>
+    <tbody>
+      <!-- rows injected -->
+    </tbody>
+  </table>
+
+  <div class="small mt-2"><strong>Comments:</strong> <span id="pNote"></span></div>
+
+  <div class="noprint mt-3">
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">Print</button>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const fmt = n => (n==null?'':(+n).toLocaleString(undefined,{maximumFractionDigits:2}));
+  const dateFmt = s => new Date(s).toLocaleString();
+
+  // tiny histogram painter (no libs)
+  function drawHist(canvas, data){
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    const max = Math.max(...data, 1);
+    const pad = 10, bars = data.length;
+    const bw = (w - pad*2) / bars;
+
+    // axis
+    ctx.strokeStyle = '#aaa';
+    ctx.beginPath(); ctx.moveTo(pad,h-pad); ctx.lineTo(w-pad,h-pad); ctx.stroke();
+
+    // bars
+    ctx.fillStyle = '#0d6efd88';
+    data.forEach((v,i)=>{
+      const x = pad + i*bw;
+      const bh = (v/max)*(h-2*pad);
+      ctx.fillRect(x, h-pad-bh, bw*0.85, bh);
+    });
+  }
+
+  // load
+  const params = new URLSearchParams(location.search);
+  const orderNo = params.get('order') || 'ORD-CBC-DEMO-001';
+
+  fetch(`/api/v1/lab/reports/cbc/${encodeURIComponent(orderNo)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      $('#pNow').textContent = new Date().toLocaleString();
+      $('#pName').textContent = d.patientName ?? '';
+      $('#pId').textContent = d.patientId ?? '';
+      $('#pOrd').textContent = d.orderNo;
+      $('#pAcc').textContent = d.accession ?? '';
+      $('#pCol').textContent = dateFmt(d.collectedAt);
+      $('#pRep').textContent = dateFmt(d.reportedAt);
+      $('#pNote').textContent = d.morphologyNote ?? '';
+
+      // table rows like your sample (grouped)
+      const rows = [
+        ['Hemoglobin (HGB)', d.hgb, 'g/dL', 'HGB'],
+        ['R.B.C. (RBC)', d.rbc, '10E12/L', 'RBC'],
+        ['Hematocrit (HCT)', d.hct, '%', 'HCT'],
+        ['M.C.V.', d.mcv, 'fL', 'MCV'],
+        ['M.C.H.', d.mch, 'pg', 'MCH'],
+        ['M.C.H.C.', d.mchc, 'g/dL', 'MCHC'],
+        ['RDW-CV', d.rdw_Cv, '%', 'RDW_CV'],
+        ['WBC', d.wbc, '10E9/L', 'WBC'],
+        ['Neutrophils', d.neut_Pct, '%', null],
+        ['Lymphocytes', d.lymph_Pct, '%', null],
+        ['Monocytes', d.mono_Pct, '%', null],
+        ['Eosinophils', d.eo_Pct, '%', null],
+        ['Basophils', d.baso_Pct, '%', null],
+        ['Platelets (PLT)', d.plt, '10E9/L', 'PLT'],
+        ['MPV', d.mpv, 'fL', 'MPV']
+      ];
+
+      const ref = d.ref || {};
+      const tbody = $('#tblCbc tbody');
+      tbody.innerHTML = rows.map(([name,val,unit,key])=>{
+        let rr = '';
+        let flag = '';
+        if(key && ref[key]){
+          const lo = ref[key].low, hi = ref[key].high;
+          rr = (lo!=null?lo:'') + ' - ' + (hi!=null?hi:'');
+          if(lo!=null && val<lo) flag = 'L';
+          if(hi!=null && val>hi) flag = 'H';
+        }
+        return `<tr>
+          <td>${name}</td>
+          <td class="right ${flag? 'flagH':''}">${fmt(val)} ${flag?flag:''}</td>
+          <td>${unit||''}</td>
+          <td class="right">${rr}</td>
+        </tr>`;
+      }).join('');
+
+      // charts
+      drawHist($('#cWbc'), d.wbcHist||[]);
+      drawHist($('#cRbc'), d.rbcHist||[]);
+      drawHist($('#cPlt'), d.pltHist||[]);
+    })
+    .catch(_=> alert('Unable to load CBC report.'));
+})();
+</script>
+}

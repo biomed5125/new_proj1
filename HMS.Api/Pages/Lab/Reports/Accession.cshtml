@@ -1,0 +1,213 @@
+﻿@page "/lab/reports/{acc}"
+@model HMS.Api.Pages.Lab.Reports.AccessionModel
+@{
+    var acc = RouteData.Values["acc"];
+    Layout = "_LayoutLab";
+    ViewData["Title"] = $"Report {Model.AccessionNumber}";
+}
+
+<style>
+    @@media print {
+        .no-print
+
+    {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: none;
+    }
+
+    }
+
+    .report-header h4 {
+        margin: 0;
+    }
+
+    .muted {
+        color: #6c757d;
+    }
+
+    .table-results td, .table-results th {
+        vertical-align: middle;
+    }
+
+    .ref {
+        font-size: .92rem;
+        color: #6c757d;
+    }
+
+    .flag-H {
+        color: #d63384;
+        font-weight: 600;
+    }
+    /* High */
+    .flag-L {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+    /* Low  */
+    .flag-A {
+        color: #dc3545;
+        font-weight: 700;
+    }
+    /* Abnormal */
+</style>
+
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center no-print">
+        <h3 class="mb-0">Laboratory Report</h3>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="javascript:print()">Print</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/lab">Close</a>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-9">
+                    <div class="report-header">
+                        <h4 id="repAcc">—</h4>
+                        <div class="muted" id="repOrder">—</div>
+                        <div class="muted">Status: <span id="repStatus">—</span></div>
+                        <div class="muted">Date: <span id="repDate">—</span></div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="muted small">Patient</div>
+                            <div class="fw-semibold" id="repPatient">—</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="muted small">Doctor</div>
+                            <div class="fw-semibold" id="repDoctor">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3 text-end">
+                    <img id="repBarcode" class="img-fluid border p-2 bg-white" alt="Barcode" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- your existing header / patient / doctor block -->
+
+@if (Model.Preanalytical is not null)
+{
+  <div class="card mb-3">
+    <div class="card-header">Pre-analytical</div>
+    <div class="card-body small">
+      @if (Model.PreanalyticalSummary?.Any() == true)
+      {
+        foreach (var chip in Model.PreanalyticalSummary)
+        {
+          <span class="badge bg-secondary me-1">@chip</span>
+        }
+      }
+      else
+      {
+        <span class="text-muted">None recorded.</span>
+      }
+
+      @if (!string.IsNullOrWhiteSpace(Model.Preanalytical!.AllergyNotes))
+      {
+        <div class="mt-2"><b>Allergy:</b> @Model.Preanalytical!.AllergyNotes</div>
+      }
+      @if (!string.IsNullOrWhiteSpace(Model.Preanalytical!.Notes))
+      {
+        <div class="mt-2"><b>Notes:</b> @Model.Preanalytical!.Notes</div>
+      }
+    </div>
+  </div>
+}
+
+<!-- rest of your results table -->
+
+    <div class="card mt-3">
+        <div class="table-responsive">
+            <table class="table table-sm table-results mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:110px">Code</th>
+                        <th>Test</th>
+                        <th class="text-end" style="width:160px">Value</th>
+                        <th style="width:90px">Unit</th>
+                        <th style="width:160px">Reference</th>
+                        <th style="width:80px">Flag</th>
+                    </tr>
+                </thead>
+                <tbody id="repRows">
+                    <tr><td colspan="6" class="text-muted">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <div class="muted small">
+            * Reference ranges are indicative. Clinical correlation is recommended.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+          (async () => {
+          const acc = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(acc));
+          const ts  = Date.now();
+
+          // HEAD
+          const headRes = await fetch(`/api/v1/lab/results/report-head?acc=${encodeURIComponent(acc)}&v=${ts}`, { cache:'no-store' });
+          if (!headRes.ok) {
+            document.getElementById('repRows').innerHTML =
+              `<tr><td colspan="6" class="text-danger">Report not found.</td></tr>`;
+            return;
+          }
+          const h = await headRes.json();
+          repAcc.textContent = h.accession;
+          repOrder.textContent = h.orderNo ? `Order: ${h.orderNo}` : '';
+          repStatus.textContent = h.status;
+          repDate.textContent = new Date(h.createdAtUtc).toLocaleString();
+          repPatient.textContent = h.patientDisplay ?? '—';
+          repDoctor.textContent = h.doctorDisplay ?? '—';
+          document.getElementById('repBarcode').src = `/api/barcodes/code128/${encodeURIComponent(h.accession)}?v=${ts}`;
+
+          async function loadRows(){
+            const r1 = await fetch(`/api/v1/lab/results/report-rows?acc=${encodeURIComponent(acc)}&v=${Date.now()}`, { cache:'no-store' });
+            let rows = r1.ok ? await r1.json() : [];
+            if (!Array.isArray(rows) || rows.length === 0) {
+              // tiny retry (150ms) in case we arrived milliseconds early
+              await new Promise(r => setTimeout(r, 150));
+              const r2 = await fetch(`/api/v1/lab/results/report-rows?acc=${encodeURIComponent(acc)}&v=${Date.now()}`, { cache:'no-store' });
+              rows = r2.ok ? await r2.json() : [];
+            }
+            repRows.innerHTML = (rows && rows.length)
+              ? rows.map(r => {
+                  const ref = (r.refLow ?? '') + ((r.refLow!=null||r.refHigh!=null)?' - ':'') + (r.refHigh ?? '');
+                  const flagCls = r.flag ? `flag-${r.flag}` : '';
+                  return `<tr>
+                    <td><span class="badge text-bg-light">${r.code}</span></td>
+                    <td>${r.name ?? ''}</td>
+                    <td class="text-end">${r.value ?? ''}</td>
+                    <td>${r.unit ?? ''}</td>
+                    <td class="ref">${ref}</td>
+                    <td class="${flagCls}">${r.flag ?? ''}</td>
+                  </tr>`;
+                }).join('')
+              : `<tr><td colspan="6" class="text-muted">No results.</td></tr>`;
+          }
+
+          await loadRows();
+        })();
+
+    </script>
+}
+

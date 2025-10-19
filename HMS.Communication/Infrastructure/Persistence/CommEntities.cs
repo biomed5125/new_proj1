@@ -1,0 +1,8 @@
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace HMS.Communication.Infrastructure.Persistence;
+
+public enum OutboxState { Pending = 0, Dispatched = 1, Acked = 2, Failed = 9 }
+
+
+

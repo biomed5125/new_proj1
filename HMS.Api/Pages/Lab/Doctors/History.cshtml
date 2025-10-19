@@ -1,0 +1,70 @@
+﻿@page "/lab/doctors/{id:long}/history"
+@model HMS.Api.Pages.Lab.Doctors.HistoryModel
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Doctor History";
+}
+
+<div class="container py-3">
+    <h3 class="mb-1">Doctor History</h3>
+    <div class="text-muted small" id="hdr">@Model.DoctorName</div>
+
+    <div class="d-flex gap-2 mt-3">
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" data-p="30">Last 30d</button>
+            <button class="btn btn-outline-secondary" data-p="90">90d</button>
+            <button class="btn btn-outline-secondary" data-p="365">1y</button>
+        </div>
+        <input type="number" id="days" class="form-control" style="max-width:130px" value="30" min="1">
+        <button class="btn btn-primary" id="reload">Reload</button>
+    </div>
+
+    <div class="card mt-3">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="tbl">
+                <thead class="table-light">
+                    <tr>
+                        <th>At</th>
+                        <th>Patient</th>
+                        <th>Tests</th>
+                        <th>Status</th>
+                        <th>Source</th>
+                        <th>Order</th>
+                    </tr>
+                </thead>
+                <tbody><tr><td colspan="6" class="text-muted">Loading…</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const $=(s,r=document)=>r.querySelector(s);
+        const id = @Model.Id;
+
+        async function load(){
+          const d = Number($('#days').value||30);
+          const r = await fetch(`/api/v1/lab/history/doctor/${id}?days=${d}`);
+          const data = await r.json();
+          $('#tbl tbody').innerHTML = data.map(x=>{
+            // prefer labRequestId if API provides it
+            const reqId = (x.labRequestId ?? (x.orderNo?.split('-').pop())) || '';
+            return `<tr>
+              <td>${new Date(x.atUtc).toLocaleString()}</td>
+              <td>${x.patient??''}</td>
+              <td>${x.tests??''}</td>
+              <td><span class="badge text-bg-${x.status==='Final'?'success':(x.status==='Partial'?'warning text-dark':'secondary')}">${x.status}</span></td>
+              <td>${x.source??''}</td>
+              <td><a href="/lab/dashboard/order?id=${encodeURIComponent(reqId)}">${x.orderNo??''}</a></td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="6" class="text-muted">No data.</td></tr>`;
+        }
+
+        document.querySelectorAll('[data-p]').forEach(b=>b.addEventListener('click',()=>{
+          $('#days').value=b.dataset.p; load();
+        }));
+        $('#reload').addEventListener('click', load);
+        load();
+    </script>
+}

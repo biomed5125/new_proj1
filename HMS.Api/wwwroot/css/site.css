@@ -1,0 +1,360 @@
+/* Cards/KPI tiles */
+.kpi {
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+
+    .kpi .value {
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+
+/* Tables */
+.table-sm td, .table-sm th {
+    padding: .55rem .75rem;
+}
+
+.table-rounded {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Page headings */
+.page-title {
+    font-weight: 700;
+    letter-spacing: .2px;
+}
+
+/* Subtle section dividers */
+.section-title {
+    font-weight: 600;
+    margin-top: 1.5rem;
+}
+
+/* Right sidebar card (order sample) */
+.card-slim .card-body {
+    padding: 1rem 1.25rem;
+}
+
+/* Make action buttons a bit tighter */
+.btn-xs {
+    padding: .2rem .5rem;
+    font-size: .85rem;
+}
+
+/* Badge helpers for statuses */
+.badge-status-final {
+    background: #198754;
+}
+/* success */
+.badge-status-partial {
+    background: #0d6efd;
+}
+/* primary */
+.badge-status-requested {
+    background: #6c757d;
+}
+/* secondary */
+:root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --muted: #6b7280;
+    --text: #0f172a;
+    --primary: #2563eb;
+    --ring: #e5e7eb;
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(2,6,23,.06);
+}
+
+/* page bg */
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* gradient sidebar */
+.lab-sidebar {
+    width: 240px;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg,#1c4fd7 0%,#1f7ccf 60%,#23a3c1 100%);
+    color: #e6f1ff;
+}
+
+.lab-brand {
+    font-weight: 700;
+    letter-spacing: .4px;
+}
+
+.lab-nav .nav-link {
+    color: #e6f1ff;
+    opacity: .8;
+    padding: .55rem .9rem;
+    border-radius: 10px;
+}
+
+    .lab-nav .nav-link:hover {
+        opacity: 1;
+        background: rgba(255,255,255,.08);
+    }
+
+    .lab-nav .nav-link.active {
+        opacity: 1;
+        background: rgba(255,255,255,.18);
+    }
+
+/* content wrapper */
+.lab-main {
+    padding: 2rem;
+}
+
+/* cards (KPIs) */
+.kpi {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--ring);
+    padding: 1.1rem 1.25rem;
+}
+
+    .kpi h6 {
+        font-size: .85rem;
+        color: var(--muted);
+        margin: 0 0 .35rem;
+    }
+
+    .kpi .num {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+
+/* tables */
+.table-modern {
+    --row: #f3f4f6;
+}
+
+    .table-modern thead th {
+        font-weight: 600;
+        color: #334155;
+        background: #eef2ff;
+        border-color: #e5e7eb;
+    }
+
+    .table-modern tbody tr:nth-child(even) {
+        background: var(--row);
+    }
+
+    .table-modern tbody tr:hover {
+        background: #eaf2ff;
+    }
+
+    .table-modern td, .table-modern th {
+        vertical-align: middle;
+    }
+
+/* badges for statuses */
+.badge-soft {
+    padding: .45rem .6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .75rem;
+}
+
+.badge-final {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.badge-partial {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+
+.badge-requested {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* subtle section header line */
+.section-title {
+    font-weight: 700;
+    margin: .75rem 0 1rem;
+}
+
+    .section-title + .hr {
+        height: 1px;
+        background: #e5e7eb;
+        margin: -.25rem 0 1rem;
+    }
+
+/* optional compact container on very wide screens */
+@media(min-width:1400px) {
+    .lab-main {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+}
+
+/* === App frame: full-height (fits to page) ============================== */
+.app {
+    display: grid;
+    grid-template-columns: 240px 1fr; /* sidebar | main */
+    min-height: 100vh; /* fill screen */
+    overflow: hidden;
+}
+
+@media (max-width: 991.98px) {
+    .app {
+        grid-template-columns: 1fr;
+    }
+    /* stack on mobile */
+}
+
+/* Sidebar tweaks (stronger gradient + subtle inner shadow) */
+.lab-sidebar {
+    background: linear-gradient(180deg,#173fbf 0%, #1f7ccf 50%, #22b0c6 100%);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,.06);
+}
+
+.lab-nav .nav-link {
+    transition: .15s ease;
+}
+
+    .lab-nav .nav-link:hover {
+        transform: translateX(2px);
+    }
+
+/* Background of the working area (softer) */
+.lab-main {
+    height: 100vh;
+    overflow: auto;
+    /* old: background: #f5f7fb; */
+    background: #f0f4f9; /* <-- softer blue-grey */
+    /* padding: 28px clamp(16px, 3vw, 36px);  a bit more breathing room */
+    padding-top: 38px clamp(16px, 3vw, 36px); /* was ~28 */
+}
+
+/* Make the center column a bit wider on large screens */
+.lab-container {
+    /* old: max-width: 1240px; */
+    /*max-width: 1400px;  <-- wider content */
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+/* larger page title */
+.lab-header h1 {
+    font-size: 2.25rem; /* was ~1.8–2.0 */
+    line-height: 1.25;
+    margin-bottom: 14px;
+}
+
+/* KPI row spans full width and stretches tiles */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
+    gap: 22px; /* more space between tiles */
+    align-items: stretch;
+    margin: 10px 0 26px; /* increase bottom space before tables */
+}
+
+
+/* Bigger, taller cards */
+.kpi {
+    position: relative;
+    background: linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);
+    border: 1px solid #e5e9f2;
+    border-radius: 18px;
+    padding: 22px 24px; /* was 18/22 */
+    min-height: 140px; /* was 110 */
+    text-align: center; /* center title + value */
+    box-shadow: 0 12px 28px rgba(2,6,23,.07);
+}
+
+    .kpi::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 6px; /* accent bar a bit thicker */
+        border-radius: 18px 18px 0 0;
+        background: linear-gradient(90deg,#4f9cf9,#22d3ee);
+    }
+
+/* Typography inside tiles */
+.kpi-title {
+    font-size: 1rem; /* was .92rem */
+    color: #5b6472;
+    margin: 4px 0 6px;
+}
+
+.kpi-value {
+    font-size: 2.1rem; /* was 1.85rem */
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Tables a touch larger for readability */
+.table-modern thead th {
+    padding: .85rem 1.1rem;
+    font-size: .95rem;
+}
+
+.table-modern td {
+    padding: .8rem 1.1rem;
+    font-size: .98rem;
+}
+
+
+/* Tables: rounded, elevated, tighter density */
+.table-wrap {
+    background: #fff;
+    border: 1px solid #e8eaf1;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(2,6,23,.05);
+    overflow: hidden;
+}
+
+.table-modern {
+    margin-bottom: 0;
+}
+
+    .table-modern thead th {
+        padding: .75rem 1rem;
+    }
+
+    .table-modern td {
+        padding: .7rem 1rem;
+    }
+
+/* Section title with accent underline */
+.section-title {
+    font-weight: 700;
+    margin: .25rem 0 .75rem;
+}
+
+.section-title-underline {
+    height: 3px;
+    width: 64px;
+    border-radius: 99px;
+    background: linear-gradient(90deg,#60a5fa,#22d3ee);
+    margin: -2px 0 14px;
+}
+
+/* Prettier scrollbar in main area (Chromium/Edge) */
+.lab-main::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+
+.lab-main::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+    .lab-main::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }

@@ -1,0 +1,26 @@
+﻿@model IEnumerable<HMS.Sdk.Contracts.Patients.PatientDto>
+@{
+    Layout = "/Areas/Reception/Views/Shared/_Layout.Reception.cshtml";
+}
+<h3>Patients</h3>
+<p><a href="/Reception/Patients/Create">+ New Patient</a></p>
+
+@if (TempData["ok"] is string ok)
+{
+    <div class="alert-success">@ok</div>
+}
+
+<table>
+    <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Created</th></tr></thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.PatientId</td>
+                <td>@p.FullName</td>
+                <td>@p.Phone</td>
+                <td>@p.CreatedAt.ToLocalTime()</td>
+            </tr>
+        }
+    </tbody>
+</table>

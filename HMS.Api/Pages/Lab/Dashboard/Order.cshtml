@@ -1,0 +1,327 @@
+﻿@page "/lab/dashboard/order"
+@model HMS.Api.Pages.Lab.Dashboard.OrderModel
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Order Details";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <h3 class="mb-0">Order <span class="text-muted">@Model.Details.OrderNo</span></h3>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm"
+               href="/lab/requests/@Model.Details.LabRequestId/edit">Edit</a>
+
+            @if (Model.Details.Sample?.AccessionNumber is not null)
+            {
+                <!-- Existing “Labels” -->
+                <a class="btn btn-outline-secondary btn-sm"
+                   target="_blank"
+                   href="/lab/labels/@Model.Details.Sample.AccessionNumber">Labels</a>
+
+                <!-- NEW: Always-visible “Reprint Label” -->
+                <a class="btn btn-success btn-sm"
+                   target="_blank"
+                   href="/lab/labels/@Model.Details.Sample.AccessionNumber">Reprint Label</a>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Patient / Doctor</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="text-muted small">Patient</div>
+                    <div class="fw-semibold">@Model.Details.PatientDisplay</div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="text-muted small">Doctor</div>
+                    <div class="fw-semibold">@Model.Details.DoctorDisplay</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Patient Profile</span>
+            <a id="opEditProfile" class="small" target="_blank">Edit</a>
+        </div>
+        <div class="card-body">
+            <div id="opProfileChips" class="d-flex flex-wrap gap-2 small"></div>
+        </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Items</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:90px">Code</th>
+                                <th>Name</th>
+                                <th style="width:110px">Unit</th>
+                                <th style="width:90px" class="text-end">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Details.Items.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-muted">No items.</td></tr>
+                            }
+                            else
+                            {
+                                foreach (var it in Model.Details.Items)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-light text-dark">@it.Code</span></td>
+                                        <td>@it.Name</td>
+                                        <td>@it.Unit</td>
+                                        <td class="text-end">@it.Price.ToString("0.00")</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">Sample</div>
+                <div class="card-body">
+                    @if (Model.Details.Sample is null)
+                    {
+                        <div class="text-muted">No sample yet.</div>
+                    }
+                    else
+                    {
+                        <div class="mb-2">
+                            <div class="text-muted small">Accession</div>
+                            <div class="fw-semibold" id="acc">@Model.Details.Sample.AccessionNumber</div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="text-muted small">Status</div>
+                            <span class="badge bg-secondary" id="sstat">@Model.Details.Sample.Status</span>
+                        </div>
+
+                        <div class="mt-2">
+                            <img src="/api/barcodes/code128/@Model.Details.Sample.AccessionNumber"
+                                 alt="Barcode"
+                                 class="img-fluid border p-2 bg-white" />
+                        </div>
+
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" id="btnCollect">Collect</button>
+                            <button class="btn btn-outline-success btn-sm" id="btnReceive">Receive</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <!-- Pre-analytical -->
+        <div class="card mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span>Pre-analytical</span>
+                <button id="preEditBtn" type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+            </div>
+            <div class="card-body" id="preView">
+                <span class="text-muted">Loading…</span>
+            </div>
+        </div>
+
+        <!-- Pre-analytical quick-edit modal -->
+        <div class="modal fade" id="preModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Pre-analytical</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="m_isDiab">
+                                    <label class="form-check-label" for="m_isDiab">Diabetic</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="m_abx">
+                                    <label class="form-check-label" for="m_abx">Antibiotic (last 3 days)</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="m_fast">Fasting (hrs)</label>
+                                <input type="number" id="m_fast" class="form-control" min="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="m_thy">Thyroid</label>
+                                <select id="m_thy" class="form-select">
+                                    <option>None</option>
+                                    <option>Hyper</option>
+                                    <option>Hypo</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="m_notes">Notes</label>
+                                <textarea id="m_notes" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="preSaveBtn" type="button" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+@section Scripts {
+    @if (Model.Details.Sample?.AccessionNumber is not null)
+    {
+        <script>
+            const accession = "@Model.Details.Sample.AccessionNumber";
+
+            async function ping(u, body) {
+                const r = await fetch(u, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body || {})
+                });
+                if (!r.ok) { alert(await r.text()); return false; }
+                location.reload(); return true;
+            }
+
+             document.getElementById('btnCollect')?.addEventListener('click', async (e) => {
+              const btn = /** @@type {HTMLButtonElement} */ (e.currentTarget);
+              if (!btn || btn.disabled) return;
+
+              btn.disabled = true;
+
+              try {
+                const ok = await ping(
+                  '/api/v1/lab/samples/collect',
+                  { labRequestId: @Model.Details.LabRequestId, collector: 'ui' }
+                );
+                // ping() reloads on success; only re-enable if it didn’t navigate
+                if (!ok) setTimeout(() => (btn.disabled = false), 1200);
+              } catch {
+                setTimeout(() => (btn.disabled = false), 1200);
+              }
+            });
+
+
+            document.getElementById('btnReceive')?.addEventListener('click', async () => {
+                // fast path: barcode scan endpoint marks sample Received
+                await ping(`/api/barcodes/scan/${encodeURIComponent(accession)}`);
+            });
+
+            (() => {
+              const lrid = @Model.Details.LabRequestId;
+              const $ = (s,r=document)=>r.querySelector(s);
+
+              function chips(x){
+                const y=[];
+                if(x.isDiabetic) y.push(`<span class="badge text-bg-warning text-dark">Diabetic</span>`);
+                if(x.tookAntibioticLast3Days) y.push(`<span class="badge text-bg-warning text-dark">Antibiotic 3d</span>`);
+                if(x.fastingHours!=null) y.push(`<span class="badge text-bg-info">Fasting ${x.fastingHours}h</span>`);
+                if(x.thyroidStatus && x.thyroidStatus!=='None') y.push(`<span class="badge text-bg-secondary">${x.thyroidStatus} thyroid</span>`);
+                if(x.dialysis) y.push(`<span class="badge text-bg-secondary">Dialysis</span>`);
+                if(x.pacemaker) y.push(`<span class="badge text-bg-secondary">Pacemaker</span>`);
+                if(x.cardiacAttackHistory) y.push(`<span class="badge text-bg-secondary">Cardiac attack</span>`);
+                if(x.hasAnemia) y.push(`<span class="badge text-bg-secondary">Anemia</span>`);
+                if(x.hasFattyLiver) y.push(`<span class="badge text-bg-secondary">Fatty liver</span>`);
+                if(x.hasHighCholesterol) y.push(`<span class="badge text-bg-secondary">High cholesterol</span>`);
+                if(x.bloodPressureSys && x.bloodPressureDia) y.push(`<span class="badge text-bg-light text-dark">BP ${x.bloodPressureSys}/${x.bloodPressureDia}</span>`);
+                if(x.pulseBpm) y.push(`<span class="badge text-bg-light text-dark">Pulse ${x.pulseBpm}</span>`);
+                if(x.hasAllergy) y.push(`<span class="badge text-bg-danger">Allergy</span>`);
+                return y.join(' ');
+              }
+
+              async function loadPre(){
+                const r = await fetch(`/api/v1/lab/preanalytics/${lrid}`);
+                const x = await r.json();
+
+                $('#preView').innerHTML =
+                  (chips(x) || `<span class="text-muted">No pre-analytical data.</span>`)
+                  + (x.allergyNotes? `<div class="mt-2 small"><b>Allergy:</b> ${x.allergyNotes}</div>`:'')
+                  + (x.notes? `<div class="mt-2 small"><b>Notes:</b> ${x.notes}</div>`:'');
+
+                // preload modal fields
+                $('#m_isDiab').checked = !!x.isDiabetic;
+                $('#m_abx').checked = !!x.tookAntibioticLast3Days;
+                $('#m_fast').value = x.fastingHours ?? '';
+                $('#m_thy').value = x.thyroidStatus || 'None';
+                $('#m_notes').value = x.notes || '';
+              }
+
+              $('#preEditBtn')?.addEventListener('click', ()=>{
+                new bootstrap.Modal('#preModal').show();
+              });
+
+              $('#preSaveBtn')?.addEventListener('click', async ()=>{
+                const dto = {
+                  labRequestId: lrid,
+                  isDiabetic: $('#m_isDiab').checked,
+                  tookAntibioticLast3Days: $('#m_abx').checked,
+                  fastingHours: $('#m_fast').value? Number($('#m_fast').value): null,
+                  thyroidStatus: $('#m_thy').value || 'None',
+                  // keep the quick-edit minimal; server keeps previous values if not provided:
+                  hasAllergy: false, allergyNotes: null,
+                  hasAnemia: false, hasFattyLiver: false, hasHighCholesterol: false,
+                  dialysis: false, cardiacAttackHistory: false, pacemaker: false,
+                  bloodPressureSys: null, bloodPressureDia: null, pulseBpm: null,
+                  notes: $('#m_notes').value || null
+                };
+                await fetch('/api/v1/lab/preanalytics', {
+                  method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify(dto)
+                });
+                bootstrap.Modal.getInstance($('#preModal')).hide();
+                loadPre();
+              });
+
+              loadPre();
+            })();
+            async function loadOrderPatientProfile(patientId){
+              const r = await fetch(`/api/v1/lab/patientprofile/${patientId}`);
+              if(!r.ok) return;
+              const x = await r.json();
+              const host = document.getElementById('opProfileChips');
+              host.innerHTML = ''; const add = (txt, cls)=>{ const s=document.createElement('span'); s.className='badge rounded-pill '+cls; s.textContent=txt; host.appendChild(s); };
+
+              add('Profile','text-bg-light');
+              if(x.diabetic) add('Diabetic','text-bg-danger');
+              if(x.thyroid===1) add('Hyper','text-bg-warning text-dark');
+              if(x.thyroid===2) add('Hypo','text-bg-warning text-dark');
+              if(x.chronicAnemia) add('Chronic anemia','text-bg-secondary');
+              if(x.dialysis) add('Dialysis','text-bg-secondary');
+              if(x.pacemaker) add('Pacemaker','text-bg-secondary');
+              if(x.cardiacHistory) add('Cardiac hx','text-bg-secondary');
+              if(x.fattyLiver) add('Fatty liver','text-bg-secondary');
+              if(x.highCholesterol) add('High cholesterol','text-bg-secondary');
+              if(x.allergy) add('Allergy'+(x.allergyNotes?': '+x.allergyNotes:''),'text-bg-danger');
+            }
+
+            document.addEventListener('DOMContentLoaded', ()=>{
+              // You already have Model.Details.{LabPatientId or PatientDisplay}. Use the id you use in history pages.
+              const pid = @Model.Details.LabPatientId; // add this to your OrderModel DTO if missing
+              if(pid>0){
+                document.getElementById('opEditProfile').href = `/lab/patients/${pid}/history`;
+                loadOrderPatientProfile(pid);
+              } else {
+                document.getElementById('opEditProfile').style.display='none';
+              }
+            });
+        </script>
+    }
+}

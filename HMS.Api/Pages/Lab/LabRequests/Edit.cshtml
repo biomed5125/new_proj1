@@ -1,0 +1,154 @@
+﻿
+@page "/lab/requests/{id:long}/edit"
+@model HMS.Api.Pages.Lab.Requests.EditModel
+@{
+    Layout = "_LayoutLab";
+    ViewData["Title"] = "Edit Request";
+}
+<div class="container py-3">
+  <div class="d-flex align-items-center justify-content-between">
+    <h3 class="mb-0">Edit Request</h3>
+    <a class="btn btn-outline-secondary btn-sm" href="/lab/dashboard/order?id=@Model.Id">Back to Order</a>
+  </div>
+  <div class="text-muted small" id="hdr"></div>
+
+  <div id="lock" class="alert alert-warning mt-3 d-none">This request has results already — editing is disabled.</div>
+
+  <div class="card p-3 mt-3" id="formCard" style="display:none;">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Patient</label>
+        <input id="patient" class="form-control" disabled>
+        <div class="form-text">Patient cannot be changed here.</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Doctor</label>
+        <div class="position-relative">
+          <input id="docInput" class="form-control" placeholder="Search doctor…" autocomplete="off">
+          <input type="hidden" id="docId">
+          <div id="docMenu" class="dropdown-menu w-100"></div>
+        </div>
+        <div class="form-text" id="docChip" style="display:none;"></div>
+      </div>
+    </div>
+
+    <hr class="my-4"/>
+
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <h5 class="mb-1">Requested Tests</h5>
+        <div class="text-muted small">Check/uncheck to add/remove tests.</div>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <div class="text-muted small" id="selectionInfo">No tests selected</div>
+        <button class="btn btn-primary" id="saveBtn">Save Changes</button>
+      </div>
+    </div>
+
+    <div class="table-responsive mt-2" style="max-height:420px; overflow:auto;">
+      <table class="table table-sm align-middle" id="testsTable">
+        <thead class="table-light">
+          <tr><th style="width:44px"></th><th style="width:90px">Code</th><th>Name</th><th style="width:110px" class="text-end">Unit</th><th style="width:90px" class="text-end">Price</th></tr>
+        </thead>
+        <tbody><tr><td colspan="5" class="text-muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="msg" class="small mt-3 text-muted"></div>
+  </div>
+</div>
+
+@section Scripts{
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const id=@Model.Id;
+let HEAD=null, ALL=[], selected=new Set();
+
+function typeahead(input, menu, url, onPick){
+  let timer=null;
+  input.addEventListener('input', ()=>{
+    clearTimeout(timer);
+    timer=setTimeout(async ()=>{
+      const q=input.value.trim();
+      if(!q){menu.classList.remove('show'); menu.innerHTML=''; return;}
+      const res=await fetch(`${url}?q=${encodeURIComponent(q)}&take=10`);
+      const rows=await res.json();
+      menu.innerHTML = rows.map(r=>`<button class="dropdown-item" type="button" data-id="${r.id}" data-name="${r.name}">${r.name}${r.specialty?(' • '+r.specialty):''}</button>`).join('')
+                      || `<div class="dropdown-item text-muted disabled">No matches</div>`;
+      menu.classList.add('show');
+    },200);
+  });
+  menu.addEventListener('click', e=>{
+    const b=e.target.closest('button[data-id]'); if(!b) return;
+    menu.classList.remove('show'); onPick(b.dataset);
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>menu.classList.remove('show'),150));
+}
+function showDoctorChip(d){ const el=$('#docChip'); if(!d){el.style.display='none';el.textContent='';el.dataset.id='';return;} el.dataset.id=d.id??''; el.textContent=d.name||''; el.style.display=''; }
+
+function totals(){
+  const rows=ALL.filter(t=>selected.has(t.labTestId));
+  const sum=rows.reduce((s,t)=>s+Number(t.price||0),0);
+  $('#selectionInfo').innerHTML = rows.length ? `<b>${rows.length}</b> test(s) · <b>${sum.toFixed(2)}</b>` : 'No tests selected';
+}
+function renderTests(rows){
+  const tb=$('#testsTable tbody');
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="5" class="text-muted">No tests</td></tr>`; return; }
+  tb.innerHTML = rows.map(t=>`
+    <tr data-id="${t.labTestId}">
+      <td><input type="checkbox" class="pick form-check-input" data-id="${t.labTestId}" ${selected.has(t.labTestId)?'checked':''}></td>
+      <td><span class="badge bg-light text-dark">${t.code}</span></td>
+      <td>${t.name}</td>
+      <td class="text-end">${t.unit??''}</td>
+      <td class="text-end">${Number(t.price??0).toFixed(2)}</td>
+    </tr>`).join('');
+  tb.querySelectorAll('.pick').forEach(c=>{
+    const testId=Number(c.dataset.id);
+    c.onchange=()=>{ c.checked?selected.add(testId):selected.delete(testId); totals(); };
+  });
+  totals();
+}
+
+async function load(){
+  const r=await fetch(`/api/v1/lab/requests/${id}/edit-data`);
+  if(!r.ok){ $('#hdr').textContent='Not found.'; return; }
+  const data=await r.json();
+  HEAD=data.head; ALL=data.items;
+
+  $('#hdr').innerHTML = `Order <b>${HEAD.orderNo}</b> • ${HEAD.patientDisplay??''}${HEAD.doctorDisplay?(' • '+HEAD.doctorDisplay):''}`;
+  $('#patient').value = HEAD.patientDisplay ?? '';
+  $('#docInput').value = HEAD.doctorDisplay ?? '';
+  if(HEAD.doctorDisplay) showDoctorChip({id: HEAD.doctorId || HEAD.labDoctorId, name: HEAD.doctorDisplay});
+
+  selected = new Set(ALL.filter(x=>x.selected).map(x=>x.labTestId));
+  renderTests(ALL);
+
+  if(HEAD.lockReasonHasAnyResult){ $('#lock').classList.remove('d-none'); $('#formCard').style.display='none'; }
+  else { $('#lock').classList.add('d-none'); $('#formCard').style.display=''; }
+}
+
+typeahead($('#docInput'), $('#docMenu'), '/api/v1/lab/refs/doctors', d=>{
+  $('#docId').value=d.id; $('#docInput').value=d.name; showDoctorChip({id:d.id,name:d.name});
+});
+
+$('#saveBtn').addEventListener('click', async ()=>{
+  const dto={
+    labRequestId: HEAD.labRequestId,
+    doctorId: Number($('#docId').value||0) || null,
+    labDoctorId: Number($('#docId').value||0) || null,
+    doctorName: $('#docInput').value || null,
+    testIds: Array.from(selected)
+  };
+  const r=await fetch(`/api/v1/lab/requests/${id}/apply`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(dto)});
+  if(!r.ok){ $('#msg').textContent=await r.text(); return; }
+  const res=await r.json();
+  $('#msg').textContent='Saved.';
+  if(res.testsChanged && res.accession){
+    const go=confirm('Tests changed. Open Labels to reprint?');
+    if(go) window.open(`/lab/labels/${encodeURIComponent(res.accession)}`,'_blank');
+  }
+});
+
+load();
+</script>
+}
